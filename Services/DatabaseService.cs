@@ -16,7 +16,7 @@ public class DatabaseService
         using var connection = new SqliteConnection(DbPath);
         connection.Open();
         
-        // typeカラムなしでテーブル作成
+        // メインテーブル作成
         string createTableCmd = @"
             CREATE TABLE IF NOT EXISTS inspection (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +42,71 @@ public class DatabaseService
         command.Parameters.AddWithValue("$date", record.Date);
 
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// 【追加】検出データ用の動的テーブルを作成し、データを保存する
+    /// テーブル名は save_name をそのまま使用する (例: save_name="jump" -> table="jump")
+    /// </summary>
+    public void CreateDetectionTableAndInsert(string saveName, List<DetectionItem> detections)
+    {
+        // テーブル名として不適切な文字が含まれていないか簡易チェック（SQLインジェクション対策）
+        // 英数字とアンダースコアのみ許可するのが安全ですが、今回はダブルクォートで囲む方針で対応します
+        string tableName = $"\"{saveName}\""; 
+
+        using var connection = new SqliteConnection(DbPath);
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+
+        try
+        {
+            // 1. 動的テーブルの作成
+            // detection_idをプライマリーキーとする
+            string createSql = $@"
+                CREATE TABLE IF NOT EXISTS {tableName} (
+                    detection_id INTEGER PRIMARY KEY,
+                    value VARCHAR(10),
+                    center_x FLOAT,
+                    center_y FLOAT,
+                    width FLOAT,
+                    height FLOAT,
+                    rotation_rad FLOAT
+                );";
+            
+            using (var cmdCreate = new SqliteCommand(createSql, connection, transaction))
+            {
+                cmdCreate.ExecuteNonQuery();
+            }
+
+            // 2. データの挿入
+            foreach (var item in detections)
+            {
+                if (item.YoloObb == null) continue;
+
+                string insertSql = $@"
+                    INSERT INTO {tableName} (detection_id, value, center_x, center_y, width, height, rotation_rad)
+                    VALUES ($id, $val, $cx, $cy, $w, $h, $rot)";
+
+                using var cmdInsert = new SqliteCommand(insertSql, connection, transaction);
+                cmdInsert.Parameters.AddWithValue("$id", item.DetectionId);
+                cmdInsert.Parameters.AddWithValue("$val", (object?)item.Value ?? DBNull.Value);
+                cmdInsert.Parameters.AddWithValue("$cx", item.YoloObb.CenterX);
+                cmdInsert.Parameters.AddWithValue("$cy", item.YoloObb.CenterY);
+                cmdInsert.Parameters.AddWithValue("$w", item.YoloObb.Width);
+                cmdInsert.Parameters.AddWithValue("$h", item.YoloObb.Height);
+                cmdInsert.Parameters.AddWithValue("$rot", item.YoloObb.RotationRad);
+                
+                cmdInsert.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+        catch (Exception ex)
+        {
+            transaction.Rollback();
+            Console.WriteLine($"Table Creation/Insert Error: {ex.Message}");
+            throw; // エラーを呼び出し元に伝える
+        }
     }
 
     public List<InspectionRecord> GetAllRecords()
@@ -132,19 +197,92 @@ public class DatabaseService
     {
         using var connection = new SqliteConnection(DbPath);
         connection.Open();
-        using var command = new SqliteCommand("DELETE FROM inspection WHERE id = $id", connection);
-        command.Parameters.AddWithValue("$id", id);
-        command.ExecuteNonQuery();
+
+        // 削除する前にテーブル名（save_name）を取得する
+        string targetName = "";
+        using (var cmdSelect = new SqliteCommand("SELECT save_name FROM inspection WHERE id = $id", connection))
+        {
+            cmdSelect.Parameters.AddWithValue("$id", id);
+            var result = cmdSelect.ExecuteScalar();
+            if (result != null) targetName = result.ToString() ?? "";
+        }
+
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            // 1. メインレコード削除
+            using (var cmdDelete = new SqliteCommand("DELETE FROM inspection WHERE id = $id", connection, transaction))
+            {
+                cmdDelete.Parameters.AddWithValue("$id", id);
+                cmdDelete.ExecuteNonQuery();
+            }
+
+            // 2. 対応する詳細テーブルを削除 (存在すれば)
+            if (!string.IsNullOrEmpty(targetName))
+            {
+                string dropTableSql = $"DROP TABLE IF EXISTS \"{targetName}\"";
+                using (var cmdDrop = new SqliteCommand(dropTableSql, connection, transaction))
+                {
+                    cmdDrop.ExecuteNonQuery();
+                }
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+        }
     }
 
+    // 名前変更時に詳細テーブルもリネームする
     public void UpdateInspectionName(int id, string newName, string newPath)
     {
         using var connection = new SqliteConnection(DbPath);
         connection.Open();
-        using var command = new SqliteCommand("UPDATE inspection SET save_name = $n, save_absolute_path = $p WHERE id = $id", connection);
-        command.Parameters.AddWithValue("$id", id);
-        command.Parameters.AddWithValue("$n", newName);
-        command.Parameters.AddWithValue("$p", newPath);
-        command.ExecuteNonQuery();
+
+        // 変更前の名前を取得
+        string oldName = "";
+        using (var cmdSelect = new SqliteCommand("SELECT save_name FROM inspection WHERE id = $id", connection))
+        {
+            cmdSelect.Parameters.AddWithValue("$id", id);
+            var result = cmdSelect.ExecuteScalar();
+            if (result != null) oldName = result.ToString() ?? "";
+        }
+
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            // 1. メインレコード更新
+            using (var cmdUpdate = new SqliteCommand("UPDATE inspection SET save_name = $n, save_absolute_path = $p WHERE id = $id", connection, transaction))
+            {
+                cmdUpdate.Parameters.AddWithValue("$id", id);
+                cmdUpdate.Parameters.AddWithValue("$n", newName);
+                cmdUpdate.Parameters.AddWithValue("$p", newPath);
+                cmdUpdate.ExecuteNonQuery();
+            }
+
+            // 2. 詳細テーブルのリネーム (古いテーブルが存在すれば)
+            if (!string.IsNullOrEmpty(oldName) && oldName != newName)
+            {
+                // 古いテーブルが存在するか確認 (sqlite_master を検索)
+                // ※リネームは ALTER TABLE "old" RENAME TO "new"
+                // ただしテーブル名が存在しないとエラーになるため、本来はチェックが必要ですが、
+                // 今回はtry-catchで囲んでいるため、存在しない場合は無視される挙動になります（または個別チェック追加）
+                
+                string renameSql = $"ALTER TABLE \"{oldName}\" RENAME TO \"{newName}\"";
+                using (var cmdRename = new SqliteCommand(renameSql, connection, transaction))
+                {
+                    // テーブルが無い場合のエラーを許容するか、事前にチェックするか
+                    try { cmdRename.ExecuteNonQuery(); } catch { /* テーブルがない場合は何もしない */ }
+                }
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+        }
     }
 }

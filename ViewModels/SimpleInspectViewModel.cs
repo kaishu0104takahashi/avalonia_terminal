@@ -46,7 +46,6 @@ public class SimpleInspectViewModel : ViewModelBase
 
         BackCommand = new RelayCommand(async () => 
         {
-            // 戻るときは念のためMJPEGに戻す（既にMJPEGかもしれないが念のため）
             await Main.TcpServer.SendJsonAsync(new 
             { 
                 type = "cmd", 
@@ -58,11 +57,13 @@ public class SimpleInspectViewModel : ViewModelBase
             Main.Navigate(new HomeViewModel(Main));
         });
 
-        // 【修正】撮影ボタンでYUV422送信 -> 待機 -> 撮影
         CaptureCommand = new RelayCommand(async () =>
         {
             if (Main.CameraImage != null)
             {
+                // 以前の検出データをクリア
+                Main.LatestDetections.Clear();
+
                 // 1. 画質変更コマンド送信
                 await Main.TcpServer.SendJsonAsync(new 
                 { 
@@ -71,7 +72,6 @@ public class SimpleInspectViewModel : ViewModelBase
                     args = new { format = "YUV422" } 
                 });
 
-                // 2. 切り替え反映待ち（0.5秒）
                 StatusMessage = "高画質撮影中...";
                 await Task.Delay(500);
 
@@ -111,6 +111,7 @@ public class SimpleInspectViewModel : ViewModelBase
                 string thumbPath = Path.Combine(saveDir, "thumb.bmp");
                 CapturedImage.Save(thumbPath);
 
+                // 1. メインレコード保存
                 _dbService.Initialize();
                 var record = new InspectionRecord
                 {
@@ -121,6 +122,13 @@ public class SimpleInspectViewModel : ViewModelBase
                     SimpleOmotePath = filePath
                 };
                 _dbService.InsertInspection(record);
+
+                // 2. 【追加】検出データがあれば、専用テーブルを作成して保存
+                if (Main.LatestDetections != null && Main.LatestDetections.Count > 0)
+                {
+                    _dbService.CreateDetectionTableAndInsert(timestamp, Main.LatestDetections);
+                    Console.WriteLine($"Saved {Main.LatestDetections.Count} detections to table '{timestamp}'");
+                }
 
                 // MJPEGに戻してホームへ
                 await Main.TcpServer.SendJsonAsync(new 
