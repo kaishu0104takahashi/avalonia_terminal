@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:avalonia_terminal.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="avalonia_terminal.Views.MeasurementView"
+             x:DataType="vm:MeasurementViewModel">
+
+    <Grid Background="#1E1E1E">
+        <Panel>
+            <Image Source="{Binding LiveImage}" Stretch="Uniform" IsVisible="{Binding !HasResult}"/>
+            
+            <Image Source="{Binding CapturedImage}" Stretch="Uniform" IsVisible="{Binding HasResult}"/>
+            
+            <Border BorderBrush="#00FF00" BorderThickness="2" Width="400" Height="300" 
+                    IsVisible="{Binding !HasResult}" Opacity="0.5" CornerRadius="10">
+                <TextBlock Text="ここに基板をセット" Foreground="#00FF00" 
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,10"/>
+            </Border>
+        </Panel>
+
+        <Border VerticalAlignment="Top" Background="#80000000" Padding="15">
+            <Grid>
+                <Button Content="＜ 戻る" Command="{Binding BackCommand}" 
+                        HorizontalAlignment="Left" Background="#444" Foreground="White" FontSize="18"/>
+                <TextBlock Text="測定モード" Foreground="White" FontSize="24" FontWeight="Bold" 
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <Grid VerticalAlignment="Bottom" Margin="0,0,0,30">
+            
+            <Button Content="測定実行" Command="{Binding ExecuteMeasurementCommand}"
+                    IsVisible="{Binding !HasResult}" IsEnabled="{Binding !IsMeasuring}"
+                    HorizontalAlignment="Center" Width="200" Height="80" 
+                    FontSize="28" FontWeight="Bold" CornerRadius="40"
+                    Background="#007ACC" Foreground="White" BorderBrush="White" BorderThickness="2"/>
+
+            <Border IsVisible="{Binding HasResult}" HorizontalAlignment="Center" Background="#CC000000" Padding="30" CornerRadius="15">
+                <StackPanel>
+                    <TextBlock Text="測定結果:" Foreground="#CCC" FontSize="20" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding ResultText}" Foreground="#00FF00" FontSize="50" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10"/>
+                    
+                    <Button Content="再測定" Command="{Binding RetryCommand}"
+                            HorizontalAlignment="Center" Margin="0,20,0,0" Width="150" Height="50"
+                            FontSize="20" Background="#555" Foreground="White"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid IsVisible="{Binding IsMeasuring}" Background="#AA000000">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                <TextBlock Text="測定中..." Foreground="White" FontSize="48" FontWeight="Bold"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

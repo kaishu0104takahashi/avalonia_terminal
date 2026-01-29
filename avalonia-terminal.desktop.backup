@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=GUI Perfect
+Comment=Start PCB Inspection App (Native)
+Exec=lxterminal -e /bin/bash -c '/home/shikoku-pc/start_native.sh; /bin/bash'
+Icon=utilities-terminal
+Terminal=false
+Categories=Utility;

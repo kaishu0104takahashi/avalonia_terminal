@@ -1,0 +1,303 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:avalonia_terminal.ViewModels"
+             xmlns:conv="using:avalonia_terminal.Converters"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="avalonia_terminal.Views.GalleryView"
+             x:DataType="vm:GalleryViewModel"
+             Background="White">
+
+    <UserControl.Resources>
+        <conv:CaseConverter x:Key="CaseConverter"/>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <Style Selector="Button.Key">
+            <Setter Property="Width" Value="75"/>
+            <Setter Property="Height" Value="75"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#DDDDDD"/>
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="Transparent" PointerPressed="OnBackgroundClicked">
+
+        <Grid IsVisible="{Binding CurrentMode, Converter={x:Static conv:EnumToBoolConverter.IsList}}">
+            <Grid RowDefinitions="Auto, *">
+                
+                <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="#AAAAAA" Padding="15" Background="White">
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
+                            <Button Command="{Binding BackCommand}" Content="＜ 戻る" Width="110" Height="60" FontSize="20" FontWeight="Bold" Background="#AAAAAA" Foreground="Black" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
+                            <TextBlock Text="{Binding StatusMessage}" Foreground="Black" VerticalAlignment="Center" FontWeight="Bold" FontSize="22"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="30" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <StackPanel.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="!IsDeleteMode"/>
+                                        <Binding Path="!IsRenameMode"/>
+                                    </MultiBinding>
+                                </StackPanel.IsVisible>
+                                
+                                <TextBox x:Name="SearchTextBox" 
+                                         GotFocus="OnSearchBoxFocused"
+                                         Text="{Binding SearchText}" 
+                                         Watermark="検索" 
+                                         Width="300" 
+                                         FontSize="24" 
+                                         VerticalContentAlignment="Center" 
+                                         Height="70"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="20">
+                                <Button Command="{Binding HeaderRenameButtonCommand}" Content="{Binding RenameButtonText}" Width="140" Height="60" FontSize="18" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8">
+                                    <Button.Styles>
+                                        <Style Selector="Button"><Setter Property="Background" Value="#007ACC"/><Setter Property="Foreground" Value="White"/></Style>
+                                        <Style Selector="Button[Content='キャンセル']"><Setter Property="Background" Value="#555555"/></Style>
+                                    </Button.Styles>
+                                </Button>
+                                <Button Command="{Binding HeaderDeleteButtonCommand}" Content="{Binding DeleteButtonText}" Width="110" Height="60" FontSize="18" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8">
+                                    <Button.Styles>
+                                        <Style Selector="Button"><Setter Property="Background" Value="#D32F2F"/><Setter Property="Foreground" Value="White"/></Style>
+                                        <Style Selector="Button[Content='実行']"><Setter Property="Background" Value="#B71C1C"/><Setter Property="BorderBrush" Value="Red"/><Setter Property="BorderThickness" Value="2"/></Style>
+                                    </Button.Styles>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <ScrollViewer Grid.Row="1" x:Name="MainScroll" Margin="10" 
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Visible"
+                              PointerPressed="OnScrollPointerPressed"
+                              PointerMoved="OnScrollPointerMoved"
+                              PointerReleased="OnScrollPointerReleased">
+                    
+                    <ItemsControl ItemsSource="{Binding DisplayGroups}" HorizontalAlignment="Stretch">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,30" HorizontalAlignment="Stretch">
+                                    <Border Background="#E0E0E0" Padding="15,8" CornerRadius="4" HorizontalAlignment="Left" Margin="0,0,0,15">
+                                        <TextBlock Text="{Binding DateHeader}" FontSize="22" FontWeight="Bold" Foreground="#333333"/>
+                                    </Border>
+                                    <ItemsControl ItemsSource="{Binding Items}">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Width="240" Height="270" Margin="12" 
+                                                        Background="White" BorderBrush="#DDDDDD" BorderThickness="1"
+                                                        Tag="{Binding}"> <Grid>
+                                                        <Grid RowDefinitions="*, Auto">
+                                                            <Image Grid.Row="0" Source="{Binding Thumbnail}" Stretch="UniformToFill" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="LowQuality"/>
+                                                            <Border Grid.Row="1" Background="White" Padding="5" Height="60">
+                                                                <TextBlock Text="{Binding Record.SaveName}" Foreground="#333333" FontSize="16" FontWeight="Bold" TextWrapping="Wrap" MaxLines="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"/>
+                                                            </Border>
+                                                        </Grid>
+                                                        
+                                                        <Border Background="#80FFFFFF" IsVisible="{Binding IsDeleteMode}"><CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" RenderTransform="scale(2.5)" /></Border>
+                                                        <Border BorderBrush="Red" BorderThickness="4" IsVisible="{Binding IsSelected}" IsHitTestVisible="False"/>
+                                                        <Border Background="#30007ACC" IsVisible="{Binding IsRenameMode}" IsHitTestVisible="False"><TextBlock Text="選択して変更" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Background="#80000000" Padding="10"/></Border>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <Grid Grid.Row="1" VerticalAlignment="Bottom" IsVisible="{Binding IsSearchKeyboardVisible}" x:Name="KeyboardContainer">
+                    <Border Background="#F0F0F0" BorderBrush="#AAA" BorderThickness="0,1,0,0" Padding="10" BoxShadow="0 -5 15 0 #20000000">
+                        <StackPanel>
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Classes="Key" Content="Clear" Command="{Binding SearchKeyboardClearCommand}" Width="120" Background="#FFCCCC" Margin="0,4,15,4"/>
+                                    <Button Classes="Key" Content="1" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="1"/>
+                                    <Button Classes="Key" Content="2" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="2"/>
+                                    <Button Classes="Key" Content="3" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="3"/>
+                                    <Button Classes="Key" Content="4" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="4"/>
+                                    <Button Classes="Key" Content="5" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="5"/>
+                                    <Button Classes="Key" Content="6" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="6"/>
+                                    <Button Classes="Key" Content="7" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="7"/>
+                                    <Button Classes="Key" Content="8" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="8"/>
+                                    <Button Classes="Key" Content="9" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="9"/>
+                                    <Button Classes="Key" Content="0" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="0"/>
+                                    <Button Classes="Key" Content="BS" Command="{Binding SearchKeyboardBackspaceCommand}" Width="100" Background="#FFDDDD" Margin="15,4,0,4"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Q}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Q"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=W}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="W"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=E}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="E"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=R}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="R"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=T}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="T"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Y}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Y"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=U}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="U"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=I}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="I"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=O}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="O"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=P}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="P"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=A}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="A"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=S}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="S"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=D}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="D"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=F}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="F"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=G}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="G"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=H}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="H"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=J}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="J"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=K}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="K"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=L}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="L"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Classes="Key" Content="{Binding CapsButtonText}" Command="{Binding ToggleCaseCommand}" Background="{Binding CapsButtonColor}" Foreground="White" Width="100"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Z}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Z"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=X}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="X"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=C}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="C"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=V}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="V"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=B}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="B"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=N}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="N"/>
+                                    <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=M}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="M"/>
+                                    <Button Classes="Key" Content="_" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="_"/>
+                                    <Button Classes="Key" Content="-" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="-"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <ContentControl Content="{Binding DetailViewModel}" IsVisible="{Binding CurrentMode, Converter={x:Static conv:EnumToBoolConverter.IsDetail}}">
+            <ContentControl.ContentTemplate>
+                <DataTemplate DataType="vm:GalleryDetailViewModel">
+                    <Grid Background="#1E1E1E" RowDefinitions="Auto, *">
+                        <Border Grid.Row="0" Background="#252526" Padding="15" BorderBrush="#3E3E42" BorderThickness="0,0,0,1">
+                            <Grid ColumnDefinitions="Auto, *">
+                                <Button Grid.Column="0" Content="＜ 戻る" Command="{Binding CloseDetailCommand}" Background="#333337" Foreground="White" FontSize="18" Height="50" Width="100" CornerRadius="8" BorderBrush="#555555" BorderThickness="1"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Record.SaveName}" Foreground="White" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="30,0,0,0"/>
+                            </Grid>
+                        </Border>
+                        <Grid Grid.Row="1" ColumnDefinitions="*, 400">
+                            <Grid Grid.Column="0" Background="Black" ClipToBounds="True">
+                                <Image Source="{Binding CurrentImage}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Button Command="{Binding MovePreviousCommand}" IsVisible="{Binding CanMovePrevious}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0" Background="#60000000" Foreground="White" FontSize="50" Padding="20,15" CornerRadius="40" BorderBrush="White" BorderThickness="2" Content="＜">
+                                    <Button.Styles><Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#90000000"/><Setter Property="BorderBrush" Value="#007ACC"/></Style></Button.Styles>
+                                </Button>
+                                <Button Command="{Binding MoveNextCommand}" IsVisible="{Binding CanMoveNext}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0" Background="#60000000" Foreground="White" FontSize="50" Padding="20,15" CornerRadius="40" BorderBrush="White" BorderThickness="2" Content="＞">
+                                    <Button.Styles><Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#90000000"/><Setter Property="BorderBrush" Value="#007ACC"/></Style></Button.Styles>
+                                </Button>
+                            </Grid>
+                            <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="1,0,0,0" Padding="25">
+                                <StackPanel Spacing="30">
+                                    <Border Background="#3E3E42" CornerRadius="5" Padding="10" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding PageIndicator}" Foreground="White" FontSize="20" FontWeight="Bold"/>
+                                    </Border>
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="保存日時:" Foreground="#AAAAAA" FontSize="16"/>
+                                        <TextBlock Text="{Binding FormattedDate}" Foreground="White" FontSize="20" FontWeight="Bold" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <Separator Background="#3E3E42" Height="2"/>
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="基板情報:" Foreground="#AAAAAA" FontSize="16"/>
+                                        <TextBlock Text="{Binding BoardInfo}" Foreground="White" FontSize="18" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </DataTemplate>
+            </ContentControl.ContentTemplate>
+        </ContentControl>
+
+        <Grid IsVisible="{Binding ShowDeleteConfirm}" Background="#AA000000">
+            <Border Background="White" Width="700" Height="300" CornerRadius="16" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="50">
+                <StackPanel VerticalAlignment="Center" Spacing="40">
+                    <TextBlock Text="選択した画像を削除してよろしいですか？" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="※この操作は取り消せません" FontSize="20" Foreground="#D32F2F" HorizontalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="60" Margin="0,20,0,0">
+                        <Button Content="はい (削除)" Command="{Binding ExecuteDeleteConfirmCommand}" Background="#D32F2F" Foreground="White" Width="180" Height="70" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+                        <Button Content="いいえ" Command="{Binding CancelDeleteConfirmCommand}" Background="#AAAAAA" Foreground="Black" Width="180" Height="70" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid IsVisible="{Binding ShowRenameDialog}" Background="#AA000000">
+            <Border Background="White" Width="1150" Height="780" CornerRadius="16" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+                <Grid RowDefinitions="Auto, Auto, *, Auto">
+                    <TextBlock Grid.Row="0" Text="新しい名前を入力してください" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                    <TextBlock Grid.Row="1" Text="※フォルダ名とファイル名が変更されます (英数字のみ)" FontSize="18" Foreground="#666666" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+                    <TextBox Grid.Row="2" Text="{Binding RenameInput}" Watermark="入力してください" FontSize="40" Padding="10" Margin="30,10" HorizontalAlignment="Stretch" VerticalAlignment="Top" TextAlignment="Center"/>
+
+                    <StackPanel Grid.Row="2" VerticalAlignment="Center" Margin="0,80,0,0" Spacing="5">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                             <Button Classes="Key" Content="Clear" Command="{Binding KeyboardClearCommand}" Width="120" Background="#FFCCCC" Margin="0,4,15,4"/>
+                             <Button Classes="Key" Content="1" Command="{Binding KeyboardAppendCommand}" CommandParameter="1"/>
+                             <Button Classes="Key" Content="2" Command="{Binding KeyboardAppendCommand}" CommandParameter="2"/>
+                             <Button Classes="Key" Content="3" Command="{Binding KeyboardAppendCommand}" CommandParameter="3"/>
+                             <Button Classes="Key" Content="4" Command="{Binding KeyboardAppendCommand}" CommandParameter="4"/>
+                             <Button Classes="Key" Content="5" Command="{Binding KeyboardAppendCommand}" CommandParameter="5"/>
+                             <Button Classes="Key" Content="6" Command="{Binding KeyboardAppendCommand}" CommandParameter="6"/>
+                             <Button Classes="Key" Content="7" Command="{Binding KeyboardAppendCommand}" CommandParameter="7"/>
+                             <Button Classes="Key" Content="8" Command="{Binding KeyboardAppendCommand}" CommandParameter="8"/>
+                             <Button Classes="Key" Content="9" Command="{Binding KeyboardAppendCommand}" CommandParameter="9"/>
+                             <Button Classes="Key" Content="0" Command="{Binding KeyboardAppendCommand}" CommandParameter="0"/>
+                             <Button Classes="Key" Content="BS" Command="{Binding KeyboardBackspaceCommand}" Width="100" Background="#FFDDDD" Margin="15,4,0,4"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Q}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Q"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=W}" Command="{Binding KeyboardAppendCommand}" CommandParameter="W"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=E}" Command="{Binding KeyboardAppendCommand}" CommandParameter="E"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=R}" Command="{Binding KeyboardAppendCommand}" CommandParameter="R"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=T}" Command="{Binding KeyboardAppendCommand}" CommandParameter="T"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Y}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Y"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=U}" Command="{Binding KeyboardAppendCommand}" CommandParameter="U"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=I}" Command="{Binding KeyboardAppendCommand}" CommandParameter="I"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=O}" Command="{Binding KeyboardAppendCommand}" CommandParameter="O"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=P}" Command="{Binding KeyboardAppendCommand}" CommandParameter="P"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=A}" Command="{Binding KeyboardAppendCommand}" CommandParameter="A"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=S}" Command="{Binding KeyboardAppendCommand}" CommandParameter="S"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=D}" Command="{Binding KeyboardAppendCommand}" CommandParameter="D"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=F}" Command="{Binding KeyboardAppendCommand}" CommandParameter="F"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=G}" Command="{Binding KeyboardAppendCommand}" CommandParameter="G"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=H}" Command="{Binding KeyboardAppendCommand}" CommandParameter="H"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=J}" Command="{Binding KeyboardAppendCommand}" CommandParameter="J"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=K}" Command="{Binding KeyboardAppendCommand}" CommandParameter="K"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=L}" Command="{Binding KeyboardAppendCommand}" CommandParameter="L"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Classes="Key" Content="{Binding CapsButtonText}" Command="{Binding ToggleCaseCommand}" Background="{Binding CapsButtonColor}" Foreground="White" Width="100"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Z}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Z"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=X}" Command="{Binding KeyboardAppendCommand}" CommandParameter="X"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=C}" Command="{Binding KeyboardAppendCommand}" CommandParameter="C"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=V}" Command="{Binding KeyboardAppendCommand}" CommandParameter="V"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=B}" Command="{Binding KeyboardAppendCommand}" CommandParameter="B"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=N}" Command="{Binding KeyboardAppendCommand}" CommandParameter="N"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=M}" Command="{Binding KeyboardAppendCommand}" CommandParameter="M"/>
+                            <Button Classes="Key" Content="_" Command="{Binding KeyboardAppendCommand}" CommandParameter="_"/>
+                            <Button Classes="Key" Content="-" Command="{Binding KeyboardAppendCommand}" CommandParameter="-"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="40" Margin="0,10,0,0">
+                        <Button Content="変更する" Command="{Binding ExecuteRenameCommand}" Background="#007ACC" Foreground="White" Width="220" Height="80" FontSize="26" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+                        <Button Content="キャンセル" Command="{Binding CancelRenameCommand}" Background="#AAAAAA" Foreground="Black" Width="220" Height="80" FontSize="26" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

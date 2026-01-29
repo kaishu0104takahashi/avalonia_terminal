@@ -1,0 +1,35 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:avalonia_terminal"
+             x:Class="avalonia_terminal.App">
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+    
+    <Application.Styles>
+        <FluentTheme />
+        
+        <Style Selector="Window">
+            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        </Style>
+
+        <Style Selector="TextBlock">
+            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        </Style>
+        <Style Selector="Label">
+            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        </Style>
+        <Style Selector="AccessText"> <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        </Style>
+        <Style Selector="ContentPresenter">
+            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        </Style>
+    </Application.Styles>
+</Application>

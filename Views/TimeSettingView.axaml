@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:avalonia_terminal.ViewModels"
+             x:Class="avalonia_terminal.Views.TimeSettingView"
+             x:DataType="vm:TimeSettingViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.Number">
+            <Setter Property="FontSize" Value="40"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.Label">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#666"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+        <Style Selector="Button.UpDn">
+            <Setter Property="Width" Value="75"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#DDDDDD"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, *, Auto">
+        <Border Grid.Row="0" Padding="15" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
+            <TextBlock Text="システム時刻設定" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#333333"/>
+        </Border>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
+            
+            <StackPanel>
+                <Button Classes="UpDn" Content="▲" Command="{Binding UpYearCommand}"/>
+                <TextBlock Classes="Number" Text="{Binding Year}" Width="100"/>
+                <Button Classes="UpDn" Content="▼" Command="{Binding DownYearCommand}"/>
+            </StackPanel>
+            <TextBlock Classes="Label" Text="年"/>
+
+            <StackPanel>
+                <Button Classes="UpDn" Content="▲" Command="{Binding UpMonthCommand}"/>
+                <TextBlock Classes="Number" Text="{Binding Month, StringFormat={}{0:D2}}"/>
+                <Button Classes="UpDn" Content="▼" Command="{Binding DownMonthCommand}"/>
+            </StackPanel>
+            <TextBlock Classes="Label" Text="月"/>
+
+            <StackPanel>
+                <Button Classes="UpDn" Content="▲" Command="{Binding UpDayCommand}"/>
+                <TextBlock Classes="Number" Text="{Binding Day, StringFormat={}{0:D2}}"/>
+                <Button Classes="UpDn" Content="▼" Command="{Binding DownDayCommand}"/>
+            </StackPanel>
+            <TextBlock Classes="Label" Text="日"/>
+
+            <Border Width="40" />
+
+            <StackPanel>
+                <Button Classes="UpDn" Content="▲" Command="{Binding UpHourCommand}"/>
+                <TextBlock Classes="Number" Text="{Binding Hour, StringFormat={}{0:D2}}"/>
+                <Button Classes="UpDn" Content="▼" Command="{Binding DownHourCommand}"/>
+            </StackPanel>
+            <TextBlock Classes="Label" Text=":" FontSize="40" Margin="5,0"/>
+
+            <StackPanel>
+                <Button Classes="UpDn" Content="▲" Command="{Binding UpMinuteCommand}"/>
+                <TextBlock Classes="Number" Text="{Binding Minute, StringFormat={}{0:D2}}"/>
+                <Button Classes="UpDn" Content="▼" Command="{Binding DownMinuteCommand}"/>
+            </StackPanel>
+            <TextBlock Classes="Label" Text=":" FontSize="40" Margin="5,0"/>
+
+            <StackPanel>
+                <Button Classes="UpDn" Content="▲" Command="{Binding UpSecondCommand}"/>
+                <TextBlock Classes="Number" Text="{Binding Second, StringFormat={}{0:D2}}" Foreground="#007ACC"/>
+                <Button Classes="UpDn" Content="▼" Command="{Binding DownSecondCommand}"/>
+            </StackPanel>
+
+        </StackPanel>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*, *" Margin="30">
+            <Button Grid.Column="0" Content="キャンセル" Command="{Binding CancelCommand}"
+                    HorizontalAlignment="Stretch" Height="70" FontSize="20" FontWeight="Bold"
+                    Margin="0,0,15,0" Background="#AAAAAA" Foreground="Black"
+                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
+            
+            <Button Grid.Column="1" Content="設 定" Command="{Binding SaveCommand}"
+                    HorizontalAlignment="Stretch" Height="70" FontSize="20" FontWeight="Bold"
+                    Margin="15,0,0,0" Background="#007ACC" Foreground="White"
+                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,8 @@
+[Bb]in/
+[Oo]bj/
+.vscode/
+.idea/
+*.user
+*.suo
+*.user
+gui_bin/

@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:avalonia_terminal.ViewModels"
+             x:Class="avalonia_terminal.Views.SimpleInspectView"
+             x:DataType="vm:SimpleInspectViewModel">
+
+    <Grid ColumnDefinitions="*, 350" Background="#202020">
+        
+        <Border Grid.Column="0" Margin="10" BorderBrush="#444" BorderThickness="2" Background="Black">
+            <Panel>
+                <Image Source="{Binding Main.CameraImage}" 
+                       IsVisible="{Binding !IsCaptured}" 
+                       Stretch="Uniform"/>
+                
+                <Image Source="{Binding CapturedImage}" 
+                       IsVisible="{Binding IsCaptured}" 
+                       Stretch="Uniform"/>
+                
+                <TextBlock Text="NO SIGNAL" 
+                           IsVisible="{Binding Main.CameraImage, Converter={x:Static ObjectConverters.IsNull}}"
+                           Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="30"/>
+            </Panel>
+        </Border>
+
+        <Border Grid.Column="1" Background="#303030" Padding="20">
+            <Grid RowDefinitions="Auto, *, Auto">
+                
+                <Border Grid.Row="0" Background="#404040" Padding="15" CornerRadius="8" Margin="0,0,0,20">
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="White" FontSize="20" TextWrapping="Wrap" TextAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Row="1" Spacing="20" VerticalAlignment="Center">
+                    
+                    <Button Command="{Binding CaptureCommand}" IsVisible="{Binding !IsCaptured}"
+                            Content="撮影"
+                            HorizontalAlignment="Stretch" Height="100" FontSize="32" FontWeight="Bold"
+                            Background="#007ACC" Foreground="White"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+
+                    <Button Command="{Binding SaveCommand}" IsVisible="{Binding IsCaptured}"
+                            Content="保存する"
+                            HorizontalAlignment="Stretch" Height="100" FontSize="32" FontWeight="Bold"
+                            Background="#2E7D32" Foreground="White"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+
+                    <Button Command="{Binding RetakeCommand}" IsVisible="{Binding IsCaptured}"
+                            Content="撮り直し"
+                            HorizontalAlignment="Stretch" Height="80" FontSize="24"
+                            Background="#EF6C00" Foreground="White"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+                </StackPanel>
+
+                <Button Grid.Row="2" Command="{Binding BackCommand}"
+                        Content="キャンセル / 戻る"
+                        HorizontalAlignment="Stretch" Height="60" FontSize="20"
+                        Background="#666" Foreground="White"
+                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
