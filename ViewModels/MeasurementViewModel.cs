@@ -105,7 +105,7 @@ namespace avalonia_terminal.ViewModels
             _mainViewModel.LatestDetections.Clear();
             ResultText = "測定開始...";
 
-            // 1. MJPEGリセット
+            // 1. MJPEGリセット (バッファクリアのため)
             await _mainViewModel.TcpServer.SendJsonAsync(new 
             { 
                 type = "cmd", 
@@ -126,13 +126,12 @@ namespace avalonia_terminal.ViewModels
             Console.WriteLine("Sent YUV422 command. Waiting for data...");
             ResultText = "データ受信待機中...";
 
-            // ★修正: 2秒間の待機を「キャンセル可能な待機」に変更
-            // これにより、待機中でもボタンを押せば即座に中止できる
+            // 古いデータをスキップするための待機期間 (キャンセル可能)
             for (int k = 0; k < 20; k++)
             {
                 if (_isCancelled) 
                 {
-                    CancelProcess(); // awaitしない (即座に戻るため)
+                    CancelProcess(); 
                     return;
                 }
                 await Task.Delay(100);
@@ -141,17 +140,19 @@ namespace avalonia_terminal.ViewModels
             var validStartTime = DateTime.Now;
             bool received = false;
             
-            // データ同期待ちループ
+            // データ同期・受信待機ループ
             while (!_isCancelled)
             {
                 var lastRecv = _mainViewModel.LastDataReceivedTime;
 
+                // 新しいデータが到着するまで待機
                 if (lastRecv <= validStartTime)
                 {
                     await Task.Delay(100);
                     continue;
                 }
 
+                // データが存在すれば受信完了とみなす
                 if (_mainViewModel.LatestDetections.Count >= 0)
                 {
                     received = true;
@@ -167,12 +168,13 @@ namespace avalonia_terminal.ViewModels
                 return;
             }
 
-            // 画像確定
+            // 画像の安定化待ち
             await Task.Delay(200);
 
             if (_mainViewModel.CameraImage != null)
             {
                 try {
+                    // UI表示用に画像のディープコピーを作成
                     using (var ms = new MemoryStream())
                     {
                         _mainViewModel.CameraImage.Save(ms);
@@ -193,17 +195,15 @@ namespace avalonia_terminal.ViewModels
             }
         }
 
-        // ★修正: async void でなく async voidに近い形だが、Taskとして管理し、呼び出し元ではawaitしない
         private void CancelProcess()
         {
             Console.WriteLine("Measurement Cancelled.");
             ResultText = "中断";
             
-            // ★重要: UIを即座に操作可能にする
+            // UIを即座に解放
             IsMeasuring = false;
             
-            // ★重要: 通信コマンドは別スレッドで投げっぱなしにする (待たない)
-            // これにより、通信タイムアウトでUIが固まるのを防ぐ
+            // 通信コマンドは別タスクで実行し、UIブロックを回避
             Task.Run(async () => 
             {
                 try
@@ -254,6 +254,7 @@ namespace avalonia_terminal.ViewModels
                             
                             float angleDeg = obb.rotation_rad * (180f / (float)Math.PI);
                             
+                            // 画像範囲外の座標を補正 (Clamp)
                             float cx = Math.Clamp(obb.center_x, 0, imgW);
                             float cy = Math.Clamp(obb.center_y, 0, imgH);
                             float w = Math.Min(obb.width, imgW);
@@ -263,6 +264,7 @@ namespace avalonia_terminal.ViewModels
                             var size = new Size2f(w, h);
                             var rotatedRect = new RotatedRect(center, size, angleDeg);
 
+                            // 切り抜き領域の計算
                             Point2f[] pts = rotatedRect.Points();
                             Point2f tl = new Point2f(), tr = new Point2f(), br = new Point2f(), bl = new Point2f();
                             float min_s = float.MaxValue, max_s = float.MinValue;
@@ -295,6 +297,7 @@ namespace avalonia_terminal.ViewModels
                                 new Point2f(0, maxHeight - 1)
                             };
 
+                            // 射影変換による切り抜きと回転補正
                             using var perspectiveM = Cv2.GetPerspectiveTransform(srcPts, dstPts);
                             using var cropped = new Mat();
                             
@@ -311,7 +314,7 @@ namespace avalonia_terminal.ViewModels
                         }
                         catch (Exception innerEx)
                         {
-                            Console.WriteLine($"Item Error: {innerEx.Message}");
+                            Console.WriteLine($"Item Processing Error: {innerEx.Message}");
                         }
                     }
 

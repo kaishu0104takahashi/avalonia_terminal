@@ -20,6 +20,10 @@ static class Constants
     public const int HEADER_SIZE = 15;
 }
 
+/// <summary>
+/// UDPによる映像受信クラス
+/// パケットの再構築および画像のデコード（MJPEG/YUV422）を行う
+/// </summary>
 public class UdpVideoReceiver
 {
     private Socket? _socket;
@@ -28,7 +32,8 @@ public class UdpVideoReceiver
     private readonly byte[] _reassembly_buffer = new byte[Constants.ALLOC_BYTE_SIZE];
     private int _current_payload_length = 0;
     
-    // 排他制御用フラグ (0:空き, 1:処理中)
+    // 排他制御用フラグ (0:待機可能, 1:処理中)
+    // UIスレッドの遅延によるバッファ溢れを防ぐために使用
     private int _is_processing = 0;
     
     private uint _current_frame_id = 0;
@@ -73,6 +78,7 @@ public class UdpVideoReceiver
 
                 ReadOnlySpan<byte> packet_span = receive_buffer.AsSpan(0, bytes_read);
 
+                // ヘッダー解析 (BigEndian)
                 uint identifier = BinaryPrimitives.ReadUInt32BigEndian(packet_span.Slice(0));
                 ushort packet_index = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(4));
                 ushort total_packet = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(6));
@@ -83,6 +89,7 @@ public class UdpVideoReceiver
 
                 if (bytes_read < Constants.HEADER_SIZE + data_size) continue;
 
+                // 新しいフレームの開始パケット
                 if (packet_index == 0)
                 {
                     _current_frame_id = identifier;
@@ -92,6 +99,7 @@ public class UdpVideoReceiver
                 }
                 else if (identifier != _current_frame_id)
                 {
+                    // 異なるフレームのパケットが混ざった場合は破棄
                     continue;
                 }
 
@@ -101,12 +109,14 @@ public class UdpVideoReceiver
                     continue;
                 }
 
+                // ペイロードを再構築バッファへコピー
                 packet_span.Slice(Constants.HEADER_SIZE, data_size).CopyTo(_reassembly_buffer.AsSpan(_current_payload_length));
                 _current_payload_length += data_size;
 
+                // 最終パケット受信時
                 if (packet_index == total_packet - 1)
                 {
-                    // ★重要: ここでフラグを立てて、Bitmap生成が終わったら即座に下ろす
+                    // 画像生成処理が空いている場合のみ実行（フレームドロップ処理）
                     if (Interlocked.CompareExchange(ref _is_processing, 1, 0) == 0)
                     {
                         Process_frame(_current_payload_length);
@@ -134,7 +144,7 @@ public class UdpVideoReceiver
             int w = _current_width;
             int h = _current_height;
 
-            // 1. MJPEGとして試す
+            // 1. MJPEG形式としてデコードを試行
             try
             {
                 using (var ms = new MemoryStream(_reassembly_buffer, 0, length, writable: false))
@@ -144,7 +154,7 @@ public class UdpVideoReceiver
             }
             catch
             {
-                // MJPEG失敗 -> YUV422としてOpenCV変換
+                // 2. デコード失敗時はRAWデータ(YUV422)とみなしてOpenCVで変換
                 try
                 {
                     if (w > 0 && h > 0)
@@ -152,6 +162,7 @@ public class UdpVideoReceiver
                         var handle = GCHandle.Alloc(_reassembly_buffer, GCHandleType.Pinned);
                         try
                         {
+                            // YUV422(YUYV) -> BGR変換 -> PNGエンコード -> Bitmap
                             using var matYuv = Mat.FromPixelData(h, w, MatType.CV_8UC2, handle.AddrOfPinnedObject());
                             using var matBgr = new Mat();
                             Cv2.CvtColor(matYuv, matBgr, ColorConversionCodes.YUV2BGR_YUYV);
@@ -172,7 +183,7 @@ public class UdpVideoReceiver
                 }
             }
 
-            // 画像があればUIへ通知 (ここは非同期)
+            // 画像生成成功時、UIスレッドへ通知
             if (bitmap != null)
             {
                 Dispatcher.UIThread.Post(() =>
@@ -183,8 +194,7 @@ public class UdpVideoReceiver
         }
         finally
         {
-            // ★最重要: UIスレッドへの通知完了を待たずに、即座にロックを解除する
-            // これによりUIが固まっても、次の画像受信は止まらなくなる
+            // UI更新の完了を待たずにロックを解除し、次のパケット受信を許可する
             Interlocked.Exchange(ref _is_processing, 0);
         }
     }

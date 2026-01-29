@@ -4,15 +4,21 @@ using System.IO;
 using System.Linq;
 using Microsoft.Data.Sqlite;
 using avalonia_terminal.Models;
-
 namespace avalonia_terminal.Services;
 
 public class DatabaseService
 {
     private const string DbPath = "Data Source=/home/shikoku-pc/db/pcb_inspection.db";
+    private const string DbDir = "/home/shikoku-pc/db";
 
     public void Initialize()
     {
+        // ディレクトリが存在しない場合は作成
+        if (!Directory.Exists(DbDir))
+        {
+            Directory.CreateDirectory(DbDir);
+        }
+
         using var connection = new SqliteConnection(DbPath);
         connection.Open();
         
@@ -29,6 +35,8 @@ public class DatabaseService
 
     public void InsertInspection(InspectionRecord record)
     {
+        Initialize(); 
+
         using var connection = new SqliteConnection(DbPath);
         connection.Open();
 
@@ -69,19 +77,20 @@ public class DatabaseService
             foreach (var item in detections)
             {
                 if (item.yolo_obb == null) continue;
-
                 string insertSql = $@"
                     INSERT INTO {tableName} (detection_id, value, center_x, center_y, width, height, rotation_rad)
                     VALUES ($id, $val, $cx, $cy, $w, $h, $rot)";
-                using var cmdInsert = new SqliteCommand(insertSql, connection, transaction);
-                cmdInsert.Parameters.AddWithValue("$id", item.detection_id);
-                cmdInsert.Parameters.AddWithValue("$val", (object?)item.value ?? DBNull.Value);
-                cmdInsert.Parameters.AddWithValue("$cx", item.yolo_obb.center_x);
-                cmdInsert.Parameters.AddWithValue("$cy", item.yolo_obb.center_y);
-                cmdInsert.Parameters.AddWithValue("$w", item.yolo_obb.width);
-                cmdInsert.Parameters.AddWithValue("$h", item.yolo_obb.height);
-                cmdInsert.Parameters.AddWithValue("$rot", item.yolo_obb.rotation_rad);
-                cmdInsert.ExecuteNonQuery();
+                using (var cmdInsert = new SqliteCommand(insertSql, connection, transaction))
+                {
+                    cmdInsert.Parameters.AddWithValue("$id", item.detection_id);
+                    cmdInsert.Parameters.AddWithValue("$val", (object?)item.value ?? DBNull.Value);
+                    cmdInsert.Parameters.AddWithValue("$cx", item.yolo_obb.center_x);
+                    cmdInsert.Parameters.AddWithValue("$cy", item.yolo_obb.center_y);
+                    cmdInsert.Parameters.AddWithValue("$w", item.yolo_obb.width);
+                    cmdInsert.Parameters.AddWithValue("$h", item.yolo_obb.height);
+                    cmdInsert.Parameters.AddWithValue("$rot", item.yolo_obb.rotation_rad);
+                    cmdInsert.ExecuteNonQuery();
+                }
             }
             transaction.Commit();
         }
@@ -172,7 +181,6 @@ public class DatabaseService
                 r.SaveName = reader.GetString(1);
                 r.SaveAbsolutePath = reader.GetString(2);
                 r.Date = reader.GetString(3);
-
                 if (!string.IsNullOrEmpty(r.SaveAbsolutePath) && Directory.Exists(r.SaveAbsolutePath))
                 {
                     string folderName = Path.GetFileName(r.SaveAbsolutePath);
@@ -182,7 +190,6 @@ public class DatabaseService
                     r.PrecisionPcbUraPath   = FindImageFile(r.SaveAbsolutePath, $"{folderName}_PCB_ura", "pcb_ura");
                     r.PrecisionCircuitOmotePath = FindImageFile(r.SaveAbsolutePath, $"{folderName}_circuit_omote", "circuit_omote");
                     r.PrecisionCircuitUraPath   = FindImageFile(r.SaveAbsolutePath, $"{folderName}_circuit_ura", "circuit_ura");
-                    
                     r.ThumbnailPath = FindImageFile(r.SaveAbsolutePath, "thumb");
                     if (string.IsNullOrEmpty(r.ThumbnailPath)) r.ThumbnailPath = r.PrecisionPcbOmotePath;
                     if (string.IsNullOrEmpty(r.ThumbnailPath)) r.ThumbnailPath = r.SimpleOmotePath;
@@ -309,12 +316,10 @@ public class DatabaseService
 
                 if (tableExists)
                 {
-                    // ★修正: 大文字小文字の違いのみの場合は、一時テーブル名を経由する
                     bool isCaseChangeOnly = string.Equals(oldName, newName, StringComparison.OrdinalIgnoreCase);
-
                     if (isCaseChangeOnly)
                     {
-                        // 1. 古い名前 -> 一時名
+                        // 大文字小文字のみの変更の場合、一時名を経由する
                         string tempName = oldName + "_TEMP_" + Guid.NewGuid().ToString("N").Substring(0, 8);
                         string renameTempSql = $"ALTER TABLE \"{oldName}\" RENAME TO \"{tempName}\"";
                         using (var cmdTemp = new SqliteCommand(renameTempSql, connection, transaction))
@@ -322,7 +327,6 @@ public class DatabaseService
                             cmdTemp.ExecuteNonQuery();
                         }
 
-                        // 2. 一時名 -> 新しい名前
                         string renameFinalSql = $"ALTER TABLE \"{tempName}\" RENAME TO \"{newName}\"";
                         using (var cmdFinal = new SqliteCommand(renameFinalSql, connection, transaction))
                         {
@@ -331,7 +335,6 @@ public class DatabaseService
                     }
                     else
                     {
-                        // 通常のリネーム
                         string renameSql = $"ALTER TABLE \"{oldName}\" RENAME TO \"{newName}\"";
                         using (var cmdRename = new SqliteCommand(renameSql, connection, transaction))
                         {

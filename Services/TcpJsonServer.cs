@@ -9,6 +9,9 @@ using System.Buffers.Binary;
 
 namespace avalonia_terminal.Services;
 
+/// <summary>
+/// AI推論結果(JSON)の受信および制御コマンド送信を行うTCPサーバー
+/// </summary>
 public class TcpJsonServer
 {
     private TcpListener? _listener;
@@ -49,7 +52,7 @@ public class TcpJsonServer
             string jsonString = JsonSerializer.Serialize(data);
             byte[] bodyBytes = Encoding.UTF8.GetBytes(jsonString);
             
-            // ヘッダ作成 (BigEndian 4byte)
+            // ヘッダー作成 (BigEndian 4byte, ボディサイズ)
             byte[] headerBytes = new byte[4];
             BinaryPrimitives.WriteInt32BigEndian(headerBytes, bodyBytes.Length);
 

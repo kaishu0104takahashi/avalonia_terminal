@@ -37,7 +37,6 @@ public class MainViewModel : ViewModelBase
 
     private readonly UdpVideoReceiver _videoReceiver;
     
-    // Serverに変更済み
     public TcpJsonServer TcpServer { get; }
 
     public bool IsConnected => TcpServer.IsConnected;
@@ -49,7 +48,6 @@ public class MainViewModel : ViewModelBase
         set { _cameraImage = value; RaisePropertyChanged(); }
     }
 
-    // 画像のフレームID (今回は更新しない)
     private uint _currentImageFrameId;
     public uint CurrentImageFrameId
     {
@@ -57,7 +55,6 @@ public class MainViewModel : ViewModelBase
         set { _currentImageFrameId = value; RaisePropertyChanged(); }
     }
 
-    // JSONのフレームID
     private int _latestJsonFrameId;
     public int LatestJsonFrameId
     {
@@ -95,18 +92,15 @@ public class MainViewModel : ViewModelBase
         ToggleFullScreenCommand = new RelayCommand(() => IsFullScreen = !IsFullScreen);
         _videoReceiver = new UdpVideoReceiver(50000);
         
-        // ★修正: 引数を (bmp) のみに戻しました
         _videoReceiver.OnFrameReceived += (bmp) => 
         {
             Dispatcher.UIThread.Post(() => 
             {
                 CameraImage = bmp;
-                // CurrentImageFrameId = id; // UdpVideoReceiver側が対応していないため削除
             });
         };
         _videoReceiver.Start();
 
-        // Serverとして初期化
         TcpServer = new TcpJsonServer(55555);
         
         TcpServer.OnJsonReceived += (json) => 
