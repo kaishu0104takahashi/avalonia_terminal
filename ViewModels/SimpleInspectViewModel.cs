@@ -15,31 +15,64 @@ namespace avalonia_terminal.ViewModels
         private readonly MainViewModel _mainViewModel;
         private readonly DatabaseService _dbService;
 
+        // XAMLからの参照用
+        public MainViewModel Main => _mainViewModel;
+
         private Bitmap? _capturedImage;
         public Bitmap? CapturedImage
         {
             get => _capturedImage;
-            set { _capturedImage = value; RaisePropertyChanged(); }
+            set 
+            { 
+                _capturedImage = value; 
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(IsCaptured));
+                RaisePropertyChanged(nameof(IsCaptureButtonVisible));
+            }
         }
+
+        // XAML互換プロパティ
+        public bool IsCaptured => CapturedImage != null;
+        public bool IsCaptureButtonVisible => !IsCaptured && !IsCapturing;
 
         private string _resultText = "";
         public string ResultText
         {
             get => _resultText;
-            set { _resultText = value; RaisePropertyChanged(); }
+            set 
+            { 
+                _resultText = value; 
+                RaisePropertyChanged(); 
+                RaisePropertyChanged(nameof(StatusMessage)); // Alias
+            }
+        }
+
+        // XAML互換エイリアス
+        public string StatusMessage
+        {
+            get => ResultText;
+            set => ResultText = value;
         }
 
         private bool _isCapturing;
         public bool IsCapturing
         {
             get => _isCapturing;
-            set { _isCapturing = value; RaisePropertyChanged(); }
+            set 
+            { 
+                _isCapturing = value; 
+                RaisePropertyChanged(); 
+                RaisePropertyChanged(nameof(IsCaptureButtonVisible));
+            }
         }
 
         public ICommand CaptureCommand { get; }
         public ICommand SaveCommand { get; }
         public ICommand RetryCommand { get; }
         public ICommand BackCommand { get; }
+        
+        // XAML互換コマンド
+        public ICommand RetakeCommand => RetryCommand;
 
         public SimpleInspectViewModel(MainViewModel mainViewModel)
         {
@@ -47,7 +80,6 @@ namespace avalonia_terminal.ViewModels
             _dbService = new DatabaseService();
 
             CaptureCommand = new RelayCommand(async () => await Capture());
-            
             SaveCommand = new RelayCommand(async () => await Save());
 
             RetryCommand = new RelayCommand(() =>
@@ -87,41 +119,30 @@ namespace avalonia_terminal.ViewModels
 
                 var validStartTime = DateTime.Now;
                 
-                // ★修正: タイムアウト(30回制限)を削除し、データが来るまで無限に待機する
-                // これにより「画像取得エラー」は出なくなる
+                // データが来るまで無限に待機する
                 while (true)
                 {
                     var lastRecv = _mainViewModel.LastDataReceivedTime;
-                    
-                    // コマンド送信後に新しいデータが来ていればOK
-                    if (lastRecv > validStartTime)
-                    {
-                        break; 
-                    }
-
-                    // 0.1秒待って再チェック（回数制限なし）
+                    if (lastRecv > validStartTime) break; 
                     await Task.Delay(100);
                 }
 
-                // 画像安定化のための少しの待機
+                // 画像安定化
                 await Task.Delay(200);
 
                 if (_mainViewModel.CameraImage != null)
                 {
-                    // UI表示用に画像をコピーして確保
                     using (var ms = new MemoryStream())
                     {
                         _mainViewModel.CameraImage.Save(ms);
                         ms.Position = 0;
                         CapturedImage = new Bitmap(ms);
                     }
-                    
                     var count = _mainViewModel.LatestDetections.Count;
                     ResultText = $"撮影完了 (検出: {count}個)";
                 }
                 else
                 {
-                    // データは来たが画像がnullの場合（稀なケース）
                     ResultText = "画像なし";
                 }
             }
@@ -151,7 +172,6 @@ namespace avalonia_terminal.ViewModels
                  
                  CapturedImage.Save(absPath);
                  
-                 // DB登録情報作成
                  var record = new InspectionRecord
                  {
                      SaveName = dateStr,
@@ -159,16 +179,13 @@ namespace avalonia_terminal.ViewModels
                      Date = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")
                  };
                  
-                 // 親テーブルへ保存
                  _dbService.InsertInspection(record);
-                 
-                 // 検出データ(抵抗器の位置や値)を専用テーブルへ保存
                  _dbService.CreateDetectionTableAndInsert(dateStr, _mainViewModel.LatestDetections);
 
                  ResultText = "保存しました";
                  await Task.Delay(1000);
                  
-                 // 保存完了後はホームへ戻る（画質も戻す）
+                 // 完了後ホームへ戻る
                  await _mainViewModel.TcpServer.SendJsonAsync(new 
                  { 
                      type = "cmd", 

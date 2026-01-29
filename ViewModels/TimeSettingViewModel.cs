@@ -1,14 +1,12 @@
 using System;
 using System.Diagnostics;
 using System.Windows.Input;
+using avalonia_terminal.Models;
 
 namespace avalonia_terminal.ViewModels
 {
     public class TimeSettingViewModel : ViewModelBase
     {
-        private readonly Action _closeAction;
-
-        // --- プロパティ ---
         private int _year;
         public int Year 
         { 
@@ -16,8 +14,8 @@ namespace avalonia_terminal.ViewModels
             set 
             { 
                 _year = value; 
-                ValidateDay(); // 年が変わったらうるう年チェックなど
                 RaisePropertyChanged(); 
+                AdjustDayLimit(); // 年が変わったらうるう年チェック
             } 
         }
 
@@ -28,8 +26,8 @@ namespace avalonia_terminal.ViewModels
             set 
             { 
                 _month = value; 
-                ValidateDay(); // 月が変わったら日数の最大値チェック
                 RaisePropertyChanged(); 
+                AdjustDayLimit(); // 月が変わったら日数チェック
             } 
         }
 
@@ -41,27 +39,14 @@ namespace avalonia_terminal.ViewModels
         }
 
         private int _hour;
-        public int Hour 
-        { 
-            get => _hour; 
-            set { _hour = value; RaisePropertyChanged(); } 
-        }
+        public int Hour { get => _hour; set { _hour = value; RaisePropertyChanged(); } }
 
         private int _minute;
-        public int Minute 
-        { 
-            get => _minute; 
-            set { _minute = value; RaisePropertyChanged(); } 
-        }
+        public int Minute { get => _minute; set { _minute = value; RaisePropertyChanged(); } }
 
         private int _second;
-        public int Second 
-        { 
-            get => _second; 
-            set { _second = value; RaisePropertyChanged(); } 
-        }
+        public int Second { get => _second; set { _second = value; RaisePropertyChanged(); } }
 
-        // --- コマンド ---
         public ICommand UpYearCommand { get; }
         public ICommand DownYearCommand { get; }
         public ICommand UpMonthCommand { get; }
@@ -75,99 +60,110 @@ namespace avalonia_terminal.ViewModels
         public ICommand UpSecondCommand { get; }
         public ICommand DownSecondCommand { get; }
 
-        public ICommand SaveCommand { get; }
+        public ICommand SetTimeCommand { get; }
+        public ICommand SaveCommand => SetTimeCommand;
         public ICommand CancelCommand { get; }
 
-        public TimeSettingViewModel(Action closeAction)
-        {
-            _closeAction = closeAction;
+        private readonly Action _onComplete;
 
-            // 現在時刻で初期化
+        public TimeSettingViewModel(Action onComplete)
+        {
+            _onComplete = onComplete;
+            
             var now = DateTime.Now;
-            Year = now.Year;
-            Month = now.Month;
-            Day = now.Day;
+            _year = now.Year;   // 初期化時はプロパティ経由せず直接セット(Adjust回避)
+            _month = now.Month;
+            _day = now.Day;
             Hour = now.Hour;
             Minute = now.Minute;
             Second = now.Second;
 
-            // コマンド定義
+            // コマンド実装
             UpYearCommand = new RelayCommand(() => Year++);
             DownYearCommand = new RelayCommand(() => Year--);
+            
+            UpMonthCommand = new RelayCommand(() => { if(Month < 12) Month++; else Month = 1; });
+            DownMonthCommand = new RelayCommand(() => { if(Month > 1) Month--; else Month = 12; });
 
-            UpMonthCommand = new RelayCommand(() => { if (Month < 12) Month++; else Month = 1; });
-            DownMonthCommand = new RelayCommand(() => { if (Month > 1) Month--; else Month = 12; });
-
-            // 日付変更ロジック：その月の最大日数を考慮
+            // ★修正: その月の日数に応じて上限を変える
             UpDayCommand = new RelayCommand(() => 
             { 
                 int maxDays = DateTime.DaysInMonth(Year, Month);
-                if (Day < maxDays) Day++; else Day = 1; 
+                if(Day < maxDays) Day++; else Day = 1; 
             });
             DownDayCommand = new RelayCommand(() => 
             { 
                 int maxDays = DateTime.DaysInMonth(Year, Month);
-                if (Day > 1) Day--; else Day = maxDays; 
+                if(Day > 1) Day--; else Day = maxDays; 
             });
 
-            UpHourCommand = new RelayCommand(() => { if (Hour < 23) Hour++; else Hour = 0; });
-            DownHourCommand = new RelayCommand(() => { if (Hour > 0) Hour--; else Hour = 23; });
+            UpHourCommand = new RelayCommand(() => { if(Hour < 23) Hour++; else Hour = 0; });
+            DownHourCommand = new RelayCommand(() => { if(Hour > 0) Hour--; else Hour = 23; });
 
-            UpMinuteCommand = new RelayCommand(() => { if (Minute < 59) Minute++; else Minute = 0; });
-            DownMinuteCommand = new RelayCommand(() => { if (Minute > 0) Minute--; else Minute = 59; });
+            UpMinuteCommand = new RelayCommand(() => { if(Minute < 59) Minute++; else Minute = 0; });
+            DownMinuteCommand = new RelayCommand(() => { if(Minute > 0) Minute--; else Minute = 59; });
 
-            UpSecondCommand = new RelayCommand(() => { if (Second < 59) Second++; else Second = 0; });
-            DownSecondCommand = new RelayCommand(() => { if (Second > 0) Second--; else Second = 59; });
+            UpSecondCommand = new RelayCommand(() => { if(Second < 59) Second++; else Second = 0; });
+            DownSecondCommand = new RelayCommand(() => { if(Second > 0) Second--; else Second = 59; });
 
-            SaveCommand = new RelayCommand(ExecuteSave);
-            CancelCommand = new RelayCommand(() => _closeAction?.Invoke());
+            SetTimeCommand = new RelayCommand(OnSetTime);
+            CancelCommand = new RelayCommand(() => _onComplete?.Invoke());
         }
 
-        /// <summary>
-        /// 現在の年月に対して、日が範囲外なら修正する
-        /// </summary>
-        private void ValidateDay()
+        // 年や月が変わった時に、日数がはみ出していたら修正するメソッド
+        // 例: 1月31日から「2月」に変えた時、31日は存在しないので28日(または29日)に戻す
+        private void AdjustDayLimit()
         {
-            try
+            try 
             {
-                // 年や月が極端な値のときはDateTime.DaysInMonthがエラーになるのを防ぐガード
-                if (Year < 1 || Month < 1 || Month > 12) return;
-
                 int maxDays = DateTime.DaysInMonth(Year, Month);
                 if (Day > maxDays)
                 {
                     Day = maxDays;
                 }
             }
-            catch
+            catch 
             {
-                // 無視
+                // 万が一異常値が入っていた場合の安全策
+                Day = 1;
             }
         }
 
-        private void ExecuteSave()
+        private void OnSetTime()
         {
-            // Linuxのdateコマンドを実行して時刻を設定
-            // フォーマット: "yyyy-MM-dd HH:mm:ss"
-            string dateStr = $"{Year:D4}-{Month:D2}-{Day:D2} {Hour:D2}:{Minute:D2}:{Second:D2}";
-
             try
             {
-                var psi = new ProcessStartInfo
+                var dt = new DateTime(Year, Month, Day, Hour, Minute, Second);
+                var timeStr = dt.ToString("yyyy-MM-dd HH:mm:ss");
+
+                // 1. システム時刻設定
+                Process.Start(new ProcessStartInfo
                 {
                     FileName = "sudo",
-                    Arguments = $"date -s \"{dateStr}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                Process.Start(psi)?.WaitForExit();
+                    Arguments = $"date -s \"{timeStr}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                })?.WaitForExit();
+
+                // 2. 時刻情報強制保存
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "sudo",
+                    Arguments = "fake-hwclock save",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                })?.WaitForExit();
+
+                Console.WriteLine($"Time set: {timeStr}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Date Set Error: {ex.Message}");
+                Console.WriteLine($"Time Set Error: {ex.Message}");
             }
-
-            _closeAction?.Invoke();
+            finally
+            {
+                _onComplete?.Invoke();
+            }
         }
     }
 }
