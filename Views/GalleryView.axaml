@@ -25,13 +25,50 @@
             <Setter Property="Background" Value="#DDDDDD"/>
             <Setter Property="Focusable" Value="False"/>
         </Style>
+        
+        <Style Selector="Border.CorrectionItem">
+            <Setter Property="Background" Value="#3E3E42"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Border.CorrectionItem[Tag=True]">
+            <Setter Property="Background" Value="#303050"/>
+            <Setter Property="BorderBrush" Value="#FFA500"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <Style Selector="Button.CorrectionBtn">
+            <Setter Property="Background" Value="#007ACC"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style Selector="Button.CorrectionBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#118ADD"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.CorrectionBtn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#005599"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.CorrectionBtn[Tag=True]">
+            <Setter Property="Background" Value="#E65100"/>
+        </Style>
+        <Style Selector="Button.CorrectionBtn[Tag=True]:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#FF7033"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.CorrectionBtn[Tag=True]:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#BF360C"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
     </UserControl.Styles>
 
     <Grid Background="Transparent" PointerPressed="OnBackgroundClicked">
 
         <Grid IsVisible="{Binding CurrentMode, Converter={x:Static conv:EnumToBoolConverter.IsList}}">
             <Grid RowDefinitions="Auto, *">
-                
                 <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="#AAAAAA" Padding="15" Background="White">
                     <Grid ColumnDefinitions="Auto, *, Auto">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
@@ -47,15 +84,7 @@
                                         <Binding Path="!IsRenameMode"/>
                                     </MultiBinding>
                                 </StackPanel.IsVisible>
-                                
-                                <TextBox x:Name="SearchTextBox" 
-                                         GotFocus="OnSearchBoxFocused"
-                                         Text="{Binding SearchText}" 
-                                         Watermark="検索" 
-                                         Width="300" 
-                                         FontSize="24" 
-                                         VerticalContentAlignment="Center" 
-                                         Height="70"/>
+                                <TextBox x:Name="SearchTextBox" GotFocus="OnSearchBoxFocused" Text="{Binding SearchText}" Watermark="検索" Width="300" FontSize="24" VerticalContentAlignment="Center" Height="70"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="20">
                                 <Button Command="{Binding HeaderRenameButtonCommand}" Content="{Binding RenameButtonText}" Width="140" Height="60" FontSize="18" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8">
@@ -75,13 +104,7 @@
                     </Grid>
                 </Border>
 
-                <ScrollViewer Grid.Row="1" x:Name="MainScroll" Margin="10" 
-                              HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Visible"
-                              PointerPressed="OnScrollPointerPressed"
-                              PointerMoved="OnScrollPointerMoved"
-                              PointerReleased="OnScrollPointerReleased">
-                    
+                <ScrollViewer Grid.Row="1" x:Name="MainScroll" Margin="10" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" PointerPressed="OnScrollPointerPressed" PointerMoved="OnScrollPointerMoved" PointerReleased="OnScrollPointerReleased">
                     <ItemsControl ItemsSource="{Binding DisplayGroups}" HorizontalAlignment="Stretch">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -93,9 +116,7 @@
                                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Width="240" Height="270" Margin="12" 
-                                                        Background="White" BorderBrush="#DDDDDD" BorderThickness="1"
-                                                        Tag="{Binding}">
+                                                <Border Width="240" Height="270" Margin="12" Background="White" BorderBrush="#DDDDDD" BorderThickness="1" Tag="{Binding}">
                                                     <Grid>
                                                         <Grid RowDefinitions="*, Auto">
                                                             <Image Grid.Row="0" Source="{Binding Thumbnail}" Stretch="UniformToFill" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="LowQuality"/>
@@ -103,7 +124,6 @@
                                                                 <TextBlock Text="{Binding Record.SaveName}" Foreground="#333333" FontSize="16" FontWeight="Bold" TextWrapping="Wrap" MaxLines="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"/>
                                                             </Border>
                                                         </Grid>
-                                                        
                                                         <Border Background="#80FFFFFF" IsVisible="{Binding IsDeleteMode}"><CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" RenderTransform="scale(2.5)" /></Border>
                                                         <Border BorderBrush="Red" BorderThickness="4" IsVisible="{Binding IsSelected}" IsHitTestVisible="False"/>
                                                         <Border Background="#30007ACC" IsVisible="{Binding IsRenameMode}" IsHitTestVisible="False"><TextBlock Text="選択して変更" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Background="#80000000" Padding="10"/></Border>
@@ -181,56 +201,116 @@
         <ContentControl Content="{Binding DetailViewModel}" IsVisible="{Binding CurrentMode, Converter={x:Static conv:EnumToBoolConverter.IsDetail}}">
             <ContentControl.ContentTemplate>
                 <DataTemplate DataType="vm:GalleryDetailViewModel">
-                    <Grid Background="#1E1E1E" RowDefinitions="Auto, *">
-                        <Border Grid.Row="0" Background="#252526" Padding="15" BorderBrush="#3E3E42" BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="Auto, *">
-                                <Button Grid.Column="0" Content="＜ 戻る" Command="{Binding CloseDetailCommand}" Background="#333337" Foreground="White" FontSize="18" Height="50" Width="100" CornerRadius="8" BorderBrush="#555555" BorderThickness="1"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Record.SaveName}" Foreground="White" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="30,0,0,0"/>
-                            </Grid>
-                        </Border>
-                        <Grid Grid.Row="1" ColumnDefinitions="*, 750">
-                            <Grid Grid.Column="0" Background="Black" ClipToBounds="True">
-                                <Image Source="{Binding CurrentImage}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Button Command="{Binding MovePreviousCommand}" IsVisible="{Binding CanMovePrevious}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0" Background="#60000000" Foreground="White" FontSize="50" Padding="20,15" CornerRadius="40" BorderBrush="White" BorderThickness="2" Content="＜">
-                                    <Button.Styles><Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#90000000"/><Setter Property="BorderBrush" Value="#007ACC"/></Style></Button.Styles>
-                                </Button>
-                                <Button Command="{Binding MoveNextCommand}" IsVisible="{Binding CanMoveNext}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0" Background="#60000000" Foreground="White" FontSize="50" Padding="20,15" CornerRadius="40" BorderBrush="White" BorderThickness="2" Content="＞">
-                                    <Button.Styles><Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#90000000"/><Setter Property="BorderBrush" Value="#007ACC"/></Style></Button.Styles>
-                                </Button>
-                            </Grid>
+                    <Grid Background="#1E1E1E">
+                        <Grid RowDefinitions="Auto, *">
+                            <Border Grid.Row="0" Background="#252526" Padding="15" BorderBrush="#3E3E42" BorderThickness="0,0,0,1">
+                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                    <Button Grid.Column="0" Content="＜ 戻る" Command="{Binding CloseDetailCommand}" Background="#333337" Foreground="White" FontSize="18" Height="50" Width="100" CornerRadius="8" BorderBrush="#555555" BorderThickness="1"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Record.SaveName}" Foreground="White" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="30,0,0,0"/>
+                                    <Button Grid.Column="2" 
+                                            Content="{Binding CorrectionButtonText}" 
+                                            Command="{Binding ToggleCorrectionCommand}"
+                                            Classes="CorrectionBtn"
+                                            Tag="{Binding IsCorrectionMode}"
+                                            Height="50" Width="120"/>
+                                </Grid>
+                            </Border>
+                            
+                            <Grid Grid.Row="1" ColumnDefinitions="*, 750">
+                                <Grid Grid.Column="0" Background="Black" ClipToBounds="True">
+                                    <Image Source="{Binding CurrentImage}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Button Command="{Binding MovePreviousCommand}" IsVisible="{Binding CanMovePrevious}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0" Background="#60000000" Foreground="White" FontSize="50" Padding="20,15" CornerRadius="40" BorderBrush="White" BorderThickness="2" Content="＜">
+                                        <Button.Styles><Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#90000000"/><Setter Property="BorderBrush" Value="#007ACC"/></Style></Button.Styles>
+                                    </Button>
+                                    <Button Command="{Binding MoveNextCommand}" IsVisible="{Binding CanMoveNext}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0" Background="#60000000" Foreground="White" FontSize="50" Padding="20,15" CornerRadius="40" BorderBrush="White" BorderThickness="2" Content="＞">
+                                        <Button.Styles><Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#90000000"/><Setter Property="BorderBrush" Value="#007ACC"/></Style></Button.Styles>
+                                    </Button>
+                                </Grid>
 
-                            <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="1,0,0,0" Padding="10">
-                                <Grid RowDefinitions="Auto, *">
-                                    <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,10">
-                                        <Border Background="#3E3E42" CornerRadius="5" Padding="10" HorizontalAlignment="Right">
-                                            <TextBlock Text="{Binding PageIndicator}" Foreground="White" FontSize="20" FontWeight="Bold"/>
+                                <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="1,0,0,0" Padding="10">
+                                    <Grid RowDefinitions="Auto, Auto, *">
+                                        <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,10">
+                                            <Grid>
+                                                <TextBlock Text="{Binding FormattedDate}" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                <Border Background="#3E3E42" CornerRadius="5" Padding="10" HorizontalAlignment="Right">
+                                                    <TextBlock Text="{Binding PageIndicator}" Foreground="White" FontSize="20" FontWeight="Bold"/>
+                                                </Border>
+                                            </Grid>
+                                            <Separator Background="#3E3E42" Height="2"/>
+                                        </StackPanel>
+
+                                        <Border Grid.Row="1" Background="#E65100" Padding="10" Margin="0,0,0,10" CornerRadius="5" IsVisible="{Binding IsCorrectionMode}">
+                                            <TextBlock Text="修正したい抵抗をタップしてください" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
                                         </Border>
-                                        <TextBlock Text="{Binding FormattedDate}" Foreground="White" FontSize="16" FontWeight="Bold" TextWrapping="Wrap"/>
-                                        <Separator Background="#3E3E42" Height="2"/>
-                                        <TextBlock Text="検出結果一覧" Foreground="#AAAAAA" FontSize="18"/>
-                                        
-                                        <TextBlock Text="{Binding DetectionStatusMessage}" Foreground="#FFDD00" FontSize="16" TextWrapping="Wrap" IsVisible="{Binding DetectionStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                    </StackPanel>
 
-                                    <ScrollViewer Grid.Row="1">
-                                        <ItemsControl ItemsSource="{Binding DetectionItems}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Background="#3E3E42" Margin="0,0,0,10" CornerRadius="5" Padding="8">
-                                                        <Grid ColumnDefinitions="220, *">
-                                                            <Border Grid.Column="0" Width="200" Height="200" Background="Black" CornerRadius="4" ClipToBounds="True">
-                                                                <Image Source="{Binding CroppedImage}" Stretch="Uniform"/>
+                                        <ScrollViewer Grid.Row="2">
+                                            <ItemsControl ItemsSource="{Binding DetectionItems}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Command="{Binding $parent[UserControl].DataContext.DetailViewModel.ItemEditCommand}" 
+                                                                CommandParameter="{Binding}"
+                                                                Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,0,10"
+                                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                                            <Border Classes="CorrectionItem" CornerRadius="5" Padding="8" Tag="{Binding IsCorrectionMode}">
+                                                                <Grid ColumnDefinitions="220, *">
+                                                                    <Border Grid.Column="0" Width="200" Height="200" Background="Black" CornerRadius="4" ClipToBounds="True">
+                                                                        <Image Source="{Binding CroppedImage}" Stretch="Uniform"/>
+                                                                    </Border>
+                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
+                                                                        <TextBlock Text="{Binding Label}" Foreground="#007ACC" FontWeight="Bold" FontSize="26"/>
+                                                                        <TextBlock Text="{Binding FormattedValue}" Foreground="White" FontSize="34" FontWeight="Bold"/>
+                                                                        <Border Background="#E65100" CornerRadius="4" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="10,5" IsVisible="{Binding IsCorrectionMode}">
+                                                                            <TextBlock Text="✎ 修正" Foreground="White" FontWeight="Bold"/>
+                                                                        </Border>
+                                                                    </StackPanel>
+                                                                </Grid>
                                                             </Border>
-                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
-                                                                <TextBlock Text="{Binding Label}" Foreground="#007ACC" FontWeight="Bold" FontSize="26"/>
-                                                                <TextBlock Text="{Binding ValueText}" Foreground="White" FontSize="34" FontWeight="Bold"/>
-                                                            </StackPanel>
-                                                        </Grid>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </ScrollViewer>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+
+                        <Grid IsVisible="{Binding IsShowKeypad}" Background="#CC000000">
+                            <Border Background="White" Width="500" Height="650" CornerRadius="16" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+                                <Grid RowDefinitions="Auto, *, Auto">
+                                    <TextBlock Grid.Row="0" Text="数値を入力 (Ω)" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                                    
+                                    <Grid Grid.Row="1" RowDefinitions="Auto, *">
+                                        <Border Grid.Row="0" BorderBrush="#CCC" BorderThickness="1" CornerRadius="5" Margin="0,0,0,20" Padding="10">
+                                            <TextBlock Text="{Binding EditInputValue}" FontSize="40" HorizontalAlignment="Right"/>
+                                        </Border>
+                                        
+                                        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" RowDefinitions="*,*,*,*">
+                                            <Button Grid.Row="0" Grid.Column="0" Content="7" Command="{Binding KeypadAppendCommand}" CommandParameter="7" Classes="Key"/>
+                                            <Button Grid.Row="0" Grid.Column="1" Content="8" Command="{Binding KeypadAppendCommand}" CommandParameter="8" Classes="Key"/>
+                                            <Button Grid.Row="0" Grid.Column="2" Content="9" Command="{Binding KeypadAppendCommand}" CommandParameter="9" Classes="Key"/>
+                                            <Button Grid.Row="0" Grid.Column="3" Content="k" Command="{Binding KeypadAppendCommand}" CommandParameter="k" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
+                                            
+                                            <Button Grid.Row="1" Grid.Column="0" Content="4" Command="{Binding KeypadAppendCommand}" CommandParameter="4" Classes="Key"/>
+                                            <Button Grid.Row="1" Grid.Column="1" Content="5" Command="{Binding KeypadAppendCommand}" CommandParameter="5" Classes="Key"/>
+                                            <Button Grid.Row="1" Grid.Column="2" Content="6" Command="{Binding KeypadAppendCommand}" CommandParameter="6" Classes="Key"/>
+                                            <Button Grid.Row="1" Grid.Column="3" Content="M" Command="{Binding KeypadAppendCommand}" CommandParameter="M" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
+                                            
+                                            <Button Grid.Row="2" Grid.Column="0" Content="1" Command="{Binding KeypadAppendCommand}" CommandParameter="1" Classes="Key"/>
+                                            <Button Grid.Row="2" Grid.Column="1" Content="2" Command="{Binding KeypadAppendCommand}" CommandParameter="2" Classes="Key"/>
+                                            <Button Grid.Row="2" Grid.Column="2" Content="3" Command="{Binding KeypadAppendCommand}" CommandParameter="3" Classes="Key"/>
+                                            <Button Grid.Row="2" Grid.Column="3" Content="." Command="{Binding KeypadAppendCommand}" CommandParameter="." Classes="Key"/>
+                                            
+                                            <Button Grid.Row="3" Grid.Column="0" Content="0" Command="{Binding KeypadAppendCommand}" CommandParameter="0" Classes="Key"/>
+                                            <Button Grid.Row="3" Grid.Column="1" Content="BS" Command="{Binding KeypadBackspaceCommand}" Classes="Key" Background="#FFDDDD" FontSize="20"/>
+                                            <Button Grid.Row="3" Grid.Column="2" Content="AC" Command="{Binding KeypadClearCommand}" Classes="Key" Background="#FFCCCC" FontSize="20"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20" Margin="0,20,0,0">
+                                        <Button Content="決定" Command="{Binding KeypadEnterCommand}" Background="#007ACC" Foreground="White" Width="140" Height="60" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
+                                        <Button Content="キャンセル" Command="{Binding KeypadCancelCommand}" Background="#AAAAAA" Foreground="Black" Width="140" Height="60" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
                         </Grid>
@@ -259,7 +339,6 @@
                     <TextBlock Grid.Row="1" Text="※フォルダ名とファイル名が変更されます (英数字のみ)" FontSize="18" Foreground="#666666" HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
                     <TextBox Grid.Row="2" Text="{Binding RenameInput}" Watermark="入力してください" FontSize="40" Padding="10" Margin="30,10" HorizontalAlignment="Stretch" VerticalAlignment="Top" TextAlignment="Center"/>
-                    
                     <TextBlock Grid.Row="2" Text="{Binding RenameErrorMessage}" Foreground="#FF5252" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,85,0,0"/>
 
                     <StackPanel Grid.Row="2" VerticalAlignment="Center" Margin="0,80,0,0" Spacing="5">

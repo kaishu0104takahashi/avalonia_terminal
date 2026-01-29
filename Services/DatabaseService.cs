@@ -92,11 +92,9 @@ public class DatabaseService
         }
     }
 
-    // 【修正】チェックを削除し、直接取得を試みる（手動作成テーブル対応）
     public List<DetectionItem> GetDetections(string saveName)
     {
         var list = new List<DetectionItem>();
-        // テーブル名はダブルクォートで囲むことで、特殊文字やスペースに対応
         string tableName = $"\"{saveName}\"";
         
         try 
@@ -104,7 +102,6 @@ public class DatabaseService
             using var connection = new SqliteConnection(DbPath);
             connection.Open();
 
-            // 直接SELECTを試みる。テーブルがなければExceptionが発生するのでcatchで処理
             string query = $"SELECT detection_id, value, center_x, center_y, width, height, rotation_rad FROM {tableName} ORDER BY detection_id";
             using var command = new SqliteCommand(query, connection);
             using var reader = command.ExecuteReader();
@@ -128,10 +125,31 @@ public class DatabaseService
         }
         catch (Exception)
         {
-            // テーブルが存在しない、またはエラーの場合は空リストを返す
-            // Console.WriteLine($"GetDetections Error: {ex.Message}");
         }
         return list;
+    }
+
+    // 【追加】特定の抵抗値を更新するメソッド
+    public void UpdateDetectionValue(string saveName, int detectionId, string newValue)
+    {
+        string tableName = $"\"{saveName}\"";
+        try
+        {
+            using var connection = new SqliteConnection(DbPath);
+            connection.Open();
+            
+            string updateSql = $"UPDATE {tableName} SET value = $val WHERE detection_id = $id";
+            using var command = new SqliteCommand(updateSql, connection);
+            command.Parameters.AddWithValue("$val", newValue);
+            command.Parameters.AddWithValue("$id", detectionId);
+            
+            command.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Update Value Error: {ex.Message}");
+            throw;
+        }
     }
 
     public List<InspectionRecord> GetAllRecords()

@@ -4,6 +4,60 @@
              x:Class="avalonia_terminal.Views.SimpleInspectView"
              x:DataType="vm:SimpleInspectViewModel">
 
+    <UserControl.Styles>
+        <Style Selector="Button.BlueBtn">
+            <Setter Property="Background" Value="#007ACC"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.BlueBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#118ADD"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.BlueBtn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#005599"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.GreenBtn">
+            <Setter Property="Background" Value="#2E7D32"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.GreenBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#388E3C"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.GreenBtn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#1B5E20"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.OrangeBtn">
+            <Setter Property="Background" Value="#EF6C00"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.OrangeBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#F57C00"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.OrangeBtn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#E65100"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.GrayBtn">
+            <Setter Property="Background" Value="#666666"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.GrayBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#777777"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.GrayBtn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#444444"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
     <Grid ColumnDefinitions="*, 350" Background="#202020">
         
         <Border Grid.Column="0" Margin="10" BorderBrush="#444" BorderThickness="2" Background="Black">
@@ -32,28 +86,24 @@
                 <StackPanel Grid.Row="1" Spacing="20" VerticalAlignment="Center">
                     
                     <Button Command="{Binding CaptureCommand}" IsVisible="{Binding !IsCaptured}"
-                            Content="撮影"
+                            Content="撮影" Classes="BlueBtn"
                             HorizontalAlignment="Stretch" Height="100" FontSize="32" FontWeight="Bold"
-                            Background="#007ACC" Foreground="White"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
 
                     <Button Command="{Binding SaveCommand}" IsVisible="{Binding IsCaptured}"
-                            Content="保存する"
+                            Content="保存する" Classes="GreenBtn"
                             HorizontalAlignment="Stretch" Height="100" FontSize="32" FontWeight="Bold"
-                            Background="#2E7D32" Foreground="White"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
 
                     <Button Command="{Binding RetakeCommand}" IsVisible="{Binding IsCaptured}"
-                            Content="撮り直し"
+                            Content="撮り直し" Classes="OrangeBtn"
                             HorizontalAlignment="Stretch" Height="80" FontSize="24"
-                            Background="#EF6C00" Foreground="White"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
                 </StackPanel>
 
                 <Button Grid.Row="2" Command="{Binding BackCommand}"
-                        Content="キャンセル / 戻る"
+                        Content="キャンセル / 戻る" Classes="GrayBtn"
                         HorizontalAlignment="Stretch" Height="60" FontSize="20"
-                        Background="#666" Foreground="White"
                         HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
             </Grid>
         </Border>

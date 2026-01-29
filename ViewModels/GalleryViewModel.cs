@@ -545,10 +545,8 @@ public class GalleryDetailViewModel : ViewModelBase
         set { _currentImage = value; RaisePropertyChanged(); }
     }
     
-    // 検出結果リスト
     public ObservableCollection<GalleryDetectionItem> DetectionItems { get; } = new();
 
-    // 【追加】デバッグ用メッセージ
     private string _detectionStatusMessage = "読み込み中...";
     public string DetectionStatusMessage
     {
@@ -566,9 +564,48 @@ public class GalleryDetailViewModel : ViewModelBase
     public string FormattedDate => DateTime.TryParseExact(Record.Date, "yyyy-MM-dd-HH-mm-ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
         ? date.ToString("yyyy年MM月dd日 HH時mm分ss秒") : Record.Date;
     public string BoardInfo => "基板情報: 取得中";
+    
+    // --- 修正機能プロパティ ---
+    private bool _isCorrectionMode = false;
+    public bool IsCorrectionMode
+    {
+        get => _isCorrectionMode;
+        set 
+        { 
+            _isCorrectionMode = value; 
+            RaisePropertyChanged(); 
+            RaisePropertyChanged(nameof(CorrectionButtonText));
+            UpdateItemsCorrectionState();
+        }
+    }
+    public string CorrectionButtonText => IsCorrectionMode ? "修正終了" : "修正";
+
+    private bool _isShowKeypad = false;
+    public bool IsShowKeypad
+    {
+        get => _isShowKeypad;
+        set { _isShowKeypad = value; RaisePropertyChanged(); }
+    }
+
+    private string _editInputValue = "";
+    public string EditInputValue
+    {
+        get => _editInputValue;
+        set { _editInputValue = value; RaisePropertyChanged(); }
+    }
+
+    private GalleryDetectionItem? _selectedEditItem;
+
     public ICommand CloseDetailCommand { get; }
     public ICommand MoveNextCommand { get; }
     public ICommand MovePreviousCommand { get; }
+    public ICommand ToggleCorrectionCommand { get; }
+    public ICommand ItemEditCommand { get; }
+    public ICommand KeypadAppendCommand { get; }
+    public ICommand KeypadBackspaceCommand { get; }
+    public ICommand KeypadClearCommand { get; }
+    public ICommand KeypadEnterCommand { get; }
+    public ICommand KeypadCancelCommand { get; }
 
     public GalleryDetailViewModel(InspectionRecord record, GalleryViewModel parent, bool startFromEnd)
     {
@@ -576,6 +613,25 @@ public class GalleryDetailViewModel : ViewModelBase
         _parentVM = parent;
         CloseDetailCommand = parent.BackToListCommand;
         
+        ToggleCorrectionCommand = new RelayCommand(() => IsCorrectionMode = !IsCorrectionMode);
+        
+        ItemEditCommand = new RelayCommand<GalleryDetectionItem>(item => 
+        {
+            if (!IsCorrectionMode || item == null) return;
+            _selectedEditItem = item;
+            EditInputValue = item.RawValue;
+            IsShowKeypad = true;
+        });
+
+        KeypadAppendCommand = new LocalRelayCommand<string>(key => EditInputValue += key);
+        KeypadBackspaceCommand = new RelayCommand(() => 
+        {
+            if (EditInputValue.Length > 0) EditInputValue = EditInputValue.Substring(0, EditInputValue.Length - 1);
+        });
+        KeypadClearCommand = new RelayCommand(() => EditInputValue = "");
+        KeypadCancelCommand = new RelayCommand(() => IsShowKeypad = false);
+        KeypadEnterCommand = new RelayCommand(SaveCorrection);
+
         var paths = new List<string>();
         
         if (!string.IsNullOrEmpty(record.SimpleOmotePath)) paths.Add(record.SimpleOmotePath);
@@ -645,6 +701,39 @@ public class GalleryDetailViewModel : ViewModelBase
         RaisePropertyChanged(nameof(CanMoveNext));
     }
     
+    private void UpdateItemsCorrectionState()
+    {
+        foreach(var item in DetectionItems)
+        {
+            item.IsCorrectionMode = IsCorrectionMode;
+        }
+        // コレクション全体の更新を通知しないとViewのスタイルが反映されないことがあるため
+        // ここでは簡易的に、リストをリフレッシュする手もあるが、バインディングで解決する
+    }
+
+    private void SaveCorrection()
+    {
+        if (_selectedEditItem == null) return;
+
+        try
+        {
+            var db = new DatabaseService();
+            // DB更新
+            db.UpdateDetectionValue(Record.SaveName, _selectedEditItem.Id, EditInputValue);
+            
+            // リストのアイテムを更新 (再読み込みする方が確実だが、チラつき防止のため値だけ更新)
+            // コレクションを置き換えるか、プロパティ変更通知が必要
+            // ここでは簡易的にリスト再構築を行う
+            LoadDetections();
+            
+            IsShowKeypad = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Save Error: {ex.Message}");
+        }
+    }
+    
     private void LoadDetections()
     {
         DetectionItems.Clear();
@@ -691,7 +780,9 @@ public class GalleryDetailViewModel : ViewModelBase
                     Cv2.GetRectSubPix(src, new OpenCvSharp.Size((int)rectSize.Width, (int)rectSize.Height), rotatedRect.Center, cropped);
                     
                     var bmp = MatToBitmap(cropped);
-                    items.Add(new GalleryDetectionItem(det.DetectionId, det.Value ?? "", bmp));
+                    var newItem = new GalleryDetectionItem(det.DetectionId, det.Value ?? "", bmp);
+                    newItem.IsCorrectionMode = IsCorrectionMode; // 現在のモードを反映
+                    items.Add(newItem);
                 }
 
                 Dispatcher.UIThread.Post(() =>
