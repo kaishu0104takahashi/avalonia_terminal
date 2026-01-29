@@ -46,6 +46,7 @@ public class SimpleInspectViewModel : ViewModelBase
 
         BackCommand = new RelayCommand(async () => 
         {
+            // 戻るときは念のためMJPEGに戻す（既にMJPEGかもしれないが念のため）
             await Main.TcpServer.SendJsonAsync(new 
             { 
                 type = "cmd", 
@@ -57,10 +58,24 @@ public class SimpleInspectViewModel : ViewModelBase
             Main.Navigate(new HomeViewModel(Main));
         });
 
-        CaptureCommand = new RelayCommand(() =>
+        // 【修正】撮影ボタンでYUV422送信 -> 待機 -> 撮影
+        CaptureCommand = new RelayCommand(async () =>
         {
             if (Main.CameraImage != null)
             {
+                // 1. 画質変更コマンド送信
+                await Main.TcpServer.SendJsonAsync(new 
+                { 
+                    type = "cmd", 
+                    command = "change_format", 
+                    args = new { format = "YUV422" } 
+                });
+
+                // 2. 切り替え反映待ち（0.5秒）
+                StatusMessage = "高画質撮影中...";
+                await Task.Delay(500);
+
+                // 3. 撮影
                 Main.IsCameraPaused = true;
                 CapturedImage = Main.CameraImage;
                 IsCaptured = true;
@@ -103,11 +118,11 @@ public class SimpleInspectViewModel : ViewModelBase
                     SaveName = timestamp,
                     SaveAbsolutePath = saveDir,
                     ThumbnailPath = thumbPath,
-                    // Typeは削除済み
                     SimpleOmotePath = filePath
                 };
                 _dbService.InsertInspection(record);
 
+                // MJPEGに戻してホームへ
                 await Main.TcpServer.SendJsonAsync(new 
                 { 
                     type = "cmd", 

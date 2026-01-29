@@ -42,38 +42,24 @@ public class HomeViewModel : ViewModelBase
             return true; 
         }, TimeSpan.FromSeconds(1));
 
-        // 【撮影モード遷移】YUV422を送信 (ここが動いていない可能性があるので再定義)
-        CaptureCommand = new RelayCommand(async () => 
+        // 【修正】遷移時は送信しない
+        CaptureCommand = new RelayCommand(() => 
         {
-            await _main.TcpServer.SendJsonAsync(new 
-            { 
-                type = "cmd", 
-                command = "change_format", 
-                args = new { format = "YUV422" } 
-            });
-
             Cleanup();
             _main.Navigate(new SimpleInspectViewModel(_main));
-        });
-
-        // 【測定モード遷移】YUV422を送信 (これは動いている)
-        MeasurementCommand = new RelayCommand(async () => 
-        {
-            await _main.TcpServer.SendJsonAsync(new 
-            { 
-                type = "cmd", 
-                command = "change_format", 
-                args = new { format = "YUV422" } 
-            });
-            
-            Cleanup();
-            _main.Navigate(new MeasurementViewModel(_main));
         });
 
         GalleryCommand = new RelayCommand(() => 
         {
             Cleanup();
             _main.Navigate(new GalleryViewModel(_main));
+        });
+        
+        // 【修正】遷移時は送信しない
+        MeasurementCommand = new RelayCommand(() => 
+        {
+            Cleanup();
+            _main.Navigate(new MeasurementViewModel(_main));
         });
 
         TimeSettingCommand = new RelayCommand(() =>
@@ -94,7 +80,7 @@ public class HomeViewModel : ViewModelBase
 
         StopCommand = new RelayCommand(_main.ShutdownApplication);
 
-        // 【Jetsonシャットダウン】(これも動いている)
+        // Jetsonシャットダウン
         ShutdownJetsonCommand = new RelayCommand(async () =>
         {
             await _main.TcpServer.SendJsonAsync(new 
@@ -105,7 +91,7 @@ public class HomeViewModel : ViewModelBase
             });
         });
 
-        // 【全電源オフ】(これも動いている)
+        // 全電源オフ
         ShutdownAllCommand = new RelayCommand(async () =>
         {
             await _main.TcpServer.SendJsonAsync(new 

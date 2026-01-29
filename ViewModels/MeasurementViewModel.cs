@@ -57,7 +57,6 @@ namespace avalonia_terminal.ViewModels
                 ResultText = "";
             });
             
-            // 【修正】戻るボタン: MJPEGに戻すJSONを送信
             BackCommand = new RelayCommand(async () =>
             {
                 await _mainViewModel.TcpServer.SendJsonAsync(new 
@@ -85,7 +84,17 @@ namespace avalonia_terminal.ViewModels
             if (IsMeasuring) return;
             IsMeasuring = true;
             HasResult = false;
-            await Task.Delay(300);
+
+            // 【修正】測定開始時に画質変更コマンド送信
+            await _mainViewModel.TcpServer.SendJsonAsync(new 
+            { 
+                type = "cmd", 
+                command = "change_format", 
+                args = new { format = "YUV422" } 
+            });
+
+            // 切り替え待ち含めて少し待機 (300ms -> 500msへ延長)
+            await Task.Delay(500);
 
             if (_mainViewModel.CameraImage != null)
             {
