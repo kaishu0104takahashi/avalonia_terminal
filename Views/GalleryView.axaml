@@ -262,7 +262,7 @@
                                                                     <TextBlock Text="{Binding Label}" Foreground="#007ACC" FontWeight="Bold" FontSize="26"/>
                                                                     <TextBlock Text="{Binding FormattedValue}" Foreground="White" FontSize="34" FontWeight="Bold"/>
                                                                     <Border Background="#E65100" CornerRadius="4" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="10,5" IsVisible="{Binding IsCorrectionMode}">
-                                                                         <TextBlock Text="✎ 修正" Foreground="White" FontWeight="Bold"/>
+                                                                        <TextBlock Text="✎ 修正" Foreground="White" FontWeight="Bold"/>
                                                                     </Border>
                                                                 </StackPanel>
                                                             </Grid>
@@ -283,7 +283,7 @@
                                     <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
                                         <TextBlock Grid.Column="0" Text="抵抗値修正" FontSize="32" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                         <Button Grid.Column="1" Command="{Binding KeypadCancelCommand}" Background="Transparent" Padding="15">
-                                             <TextBlock Text="✕" FontSize="36" Foreground="#999" FontWeight="Bold"/>
+                                            <TextBlock Text="✕" FontSize="36" Foreground="#999" FontWeight="Bold"/>
                                         </Button>
                                     </Grid>
                                     
@@ -419,40 +419,40 @@
                              <Button Classes="Key" Content="BS" Command="{Binding KeyboardBackspaceCommand}" Width="100" Background="#FFDDDD" Margin="15,4,0,4"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Q}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Q"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=W}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="W"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=E}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="E"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=R}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="R"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=T}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="T"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Y}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Y"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=U}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="U"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=I}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="I"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=O}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="O"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=P}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="P"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Q}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Q"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=W}" Command="{Binding KeyboardAppendCommand}" CommandParameter="W"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=E}" Command="{Binding KeyboardAppendCommand}" CommandParameter="E"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=R}" Command="{Binding KeyboardAppendCommand}" CommandParameter="R"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=T}" Command="{Binding KeyboardAppendCommand}" CommandParameter="T"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Y}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Y"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=U}" Command="{Binding KeyboardAppendCommand}" CommandParameter="U"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=I}" Command="{Binding KeyboardAppendCommand}" CommandParameter="I"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=O}" Command="{Binding KeyboardAppendCommand}" CommandParameter="O"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=P}" Command="{Binding KeyboardAppendCommand}" CommandParameter="P"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=A}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="A"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=S}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="S"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=D}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="D"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=F}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="F"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=G}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="G"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=H}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="H"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=J}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="J"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=K}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="K"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=L}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="L"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=A}" Command="{Binding KeyboardAppendCommand}" CommandParameter="A"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=S}" Command="{Binding KeyboardAppendCommand}" CommandParameter="S"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=D}" Command="{Binding KeyboardAppendCommand}" CommandParameter="D"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=F}" Command="{Binding KeyboardAppendCommand}" CommandParameter="F"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=G}" Command="{Binding KeyboardAppendCommand}" CommandParameter="G"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=H}" Command="{Binding KeyboardAppendCommand}" CommandParameter="H"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=J}" Command="{Binding KeyboardAppendCommand}" CommandParameter="J"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=K}" Command="{Binding KeyboardAppendCommand}" CommandParameter="K"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=L}" Command="{Binding KeyboardAppendCommand}" CommandParameter="L"/>
                         </StackPanel>
                         
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button Classes="Key" Content="{Binding CapsButtonText}" Command="{Binding ToggleCaseCommand}" Background="{Binding CapsButtonColor}" Foreground="White" Width="100"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Z}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Z"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=X}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="X"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=C}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="C"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=V}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="V"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=B}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="B"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=N}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="N"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=M}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="M"/>
-                            <Button Classes="Key" Content="_" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="_"/>
-                            <Button Classes="Key" Content="-" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="-"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Z}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Z"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=X}" Command="{Binding KeyboardAppendCommand}" CommandParameter="X"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=C}" Command="{Binding KeyboardAppendCommand}" CommandParameter="C"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=V}" Command="{Binding KeyboardAppendCommand}" CommandParameter="V"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=B}" Command="{Binding KeyboardAppendCommand}" CommandParameter="B"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=N}" Command="{Binding KeyboardAppendCommand}" CommandParameter="N"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=M}" Command="{Binding KeyboardAppendCommand}" CommandParameter="M"/>
+                            <Button Classes="Key" Content="_" Command="{Binding KeyboardAppendCommand}" CommandParameter="_"/>
+                            <Button Classes="Key" Content="-" Command="{Binding KeyboardAppendCommand}" CommandParameter="-"/>
                         </StackPanel>
                     </StackPanel>
 
