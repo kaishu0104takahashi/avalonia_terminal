@@ -6,14 +6,21 @@ using Microsoft.Data.Sqlite;
 using avalonia_terminal.Models;
 namespace avalonia_terminal.Services;
 
+/// <summary>
+/// SQLiteデータベース管理クラス。
+/// 検査データの永続化、動的テーブル生成、リネーム、削除などの操作を提供します。
+/// </summary>
 public class DatabaseService
 {
     private const string DbPath = "Data Source=/home/shikoku-pc/db/pcb_inspection.db";
     private const string DbDir = "/home/shikoku-pc/db";
 
+    /// <summary>
+    /// データベースの初期化を行います。
+    /// ディレクトリおよびファイルが存在しない場合は自動生成し、基本テーブルを作成します。
+    /// </summary>
     public void Initialize()
     {
-        // ディレクトリが存在しない場合は作成
         if (!Directory.Exists(DbDir))
         {
             Directory.CreateDirectory(DbDir);
@@ -33,6 +40,10 @@ public class DatabaseService
         command.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// 新規検査レコードを親テーブル(inspection)に挿入します。
+    /// </summary>
+    /// <param name="record">検査レコード情報</param>
     public void InsertInspection(InspectionRecord record)
     {
         Initialize(); 
@@ -51,6 +62,11 @@ public class DatabaseService
         command.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// 検査ごとの詳細データを格納するテーブルを動的に作成し、データを挿入します。
+    /// </summary>
+    /// <param name="saveName">テーブル名として使用する検査名（タイムスタンプ等）</param>
+    /// <param name="detections">検出された抵抗器データのリスト</param>
     public void CreateDetectionTableAndInsert(string saveName, List<detection_data> detections)
     {
         string tableName = $"\"{saveName}\"";
@@ -102,6 +118,11 @@ public class DatabaseService
         }
     }
 
+    /// <summary>
+    /// 指定された検査の詳細データを取得します。
+    /// </summary>
+    /// <param name="saveName">対象のテーブル名</param>
+    /// <returns>検出データのリスト</returns>
     public List<DetectionItem> GetDetections(string saveName)
     {
         var list = new List<DetectionItem>();
@@ -139,6 +160,9 @@ public class DatabaseService
         return list;
     }
 
+    /// <summary>
+    /// 指定された抵抗器の値を更新します。
+    /// </summary>
     public void UpdateDetectionValue(string saveName, int detectionId, string newValue)
     {
         string tableName = $"\"{saveName}\"";
@@ -161,6 +185,9 @@ public class DatabaseService
         }
     }
 
+    /// <summary>
+    /// すべての検査記録を取得し、関連する画像パスを紐付けます。
+    /// </summary>
     public List<InspectionRecord> GetAllRecords()
     {
         var list = new List<InspectionRecord>();
@@ -239,6 +266,9 @@ public class DatabaseService
         } catch { return ""; }
     }
 
+    /// <summary>
+    /// 検査記録および関連テーブルを削除します。
+    /// </summary>
     public void DeleteInspection(int id)
     {
         using var connection = new SqliteConnection(DbPath);
@@ -277,6 +307,10 @@ public class DatabaseService
         }
     }
 
+    /// <summary>
+    /// 検査記録の名前を変更します。
+    /// SQLiteのテーブル名は直接リネームできない場合があるため、一時テーブルを経由するなどの処理を行います。
+    /// </summary>
     public void UpdateInspectionName(int id, string newName, string newPath)
     {
         using var connection = new SqliteConnection(DbPath);
@@ -302,7 +336,7 @@ public class DatabaseService
                 cmdUpdate.ExecuteNonQuery();
             }
 
-            // 2. 詳細テーブルのリネーム
+            // 2. 詳細テーブルのリネーム処理
             if (!string.IsNullOrEmpty(oldName) && oldName != newName)
             {
                 string checkTableSql = "SELECT name FROM sqlite_master WHERE type='table' AND name=@oldName";
@@ -319,7 +353,7 @@ public class DatabaseService
                     bool isCaseChangeOnly = string.Equals(oldName, newName, StringComparison.OrdinalIgnoreCase);
                     if (isCaseChangeOnly)
                     {
-                        // 大文字小文字のみの変更の場合、一時名を経由する
+                        // 大文字小文字のみの変更の場合、一時名を経由してリネーム
                         string tempName = oldName + "_TEMP_" + Guid.NewGuid().ToString("N").Substring(0, 8);
                         string renameTempSql = $"ALTER TABLE \"{oldName}\" RENAME TO \"{tempName}\"";
                         using (var cmdTemp = new SqliteCommand(renameTempSql, connection, transaction))

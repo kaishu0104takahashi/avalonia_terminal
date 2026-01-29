@@ -12,6 +12,10 @@ using OpenCvSharp;
 
 namespace avalonia_terminal.ViewModels
 {
+    /// <summary>
+    /// 測定モードのViewModel。
+    /// リアルタイム映像の受信、物体検出データの同期、および画像切り抜き処理（OpenCV）を制御します。
+    /// </summary>
     public class MeasurementViewModel : ViewModelBase
     {
         private readonly MainViewModel _mainViewModel;
@@ -89,6 +93,13 @@ namespace avalonia_terminal.ViewModels
             }
         }
 
+        /// <summary>
+        /// 測定プロセスを実行します。
+        /// 1. 画像フォーマットを高画質(YUV422)に切り替え
+        /// 2. データ受信の待機（古いデータのスキップ）
+        /// 3. 画像と検出データの同期
+        /// 4. 切り抜き処理の実行
+        /// </summary>
         private async Task ExecuteMeasurement()
         {
             if (IsMeasuring) return;
@@ -105,7 +116,7 @@ namespace avalonia_terminal.ViewModels
             _mainViewModel.LatestDetections.Clear();
             ResultText = "測定開始...";
 
-            // 1. MJPEGリセット (バッファクリアのため)
+            // バッファクリアのため、一旦MJPEGモードへリセット
             await _mainViewModel.TcpServer.SendJsonAsync(new 
             { 
                 type = "cmd", 
@@ -115,7 +126,7 @@ namespace avalonia_terminal.ViewModels
             
             await Task.Delay(200);
 
-            // 2. YUV422 (高画質) に切り替え
+            // 高画質(YUV422)モードへ切り替え
             await _mainViewModel.TcpServer.SendJsonAsync(new 
             { 
                 type = "cmd", 
@@ -126,7 +137,7 @@ namespace avalonia_terminal.ViewModels
             Console.WriteLine("Sent YUV422 command. Waiting for data...");
             ResultText = "データ受信待機中...";
 
-            // 古いデータをスキップするための待機期間 (キャンセル可能)
+            // ストリームの安定化を待機 (キャンセル可能)
             for (int k = 0; k < 20; k++)
             {
                 if (_isCancelled) 
@@ -140,7 +151,7 @@ namespace avalonia_terminal.ViewModels
             var validStartTime = DateTime.Now;
             bool received = false;
             
-            // データ同期・受信待機ループ
+            // データ受信待ちループ
             while (!_isCancelled)
             {
                 var lastRecv = _mainViewModel.LastDataReceivedTime;
@@ -168,7 +179,7 @@ namespace avalonia_terminal.ViewModels
                 return;
             }
 
-            // 画像の安定化待ち
+            // 画像の確定待ち
             await Task.Delay(200);
 
             if (_mainViewModel.CameraImage != null)
@@ -195,12 +206,15 @@ namespace avalonia_terminal.ViewModels
             }
         }
 
+        /// <summary>
+        /// 測定プロセスを中断します。
+        /// カメラモードをMJPEGに戻し、UIをリセットします。
+        /// </summary>
         private void CancelProcess()
         {
             Console.WriteLine("Measurement Cancelled.");
             ResultText = "中断";
             
-            // UIを即座に解放
             IsMeasuring = false;
             
             // 通信コマンドは別タスクで実行し、UIブロックを回避
@@ -222,6 +236,10 @@ namespace avalonia_terminal.ViewModels
             });
         }
 
+        /// <summary>
+        /// 取得した画像と検出データ(OBB)を基に、個別の抵抗器画像を切り抜きます。
+        /// OpenCvSharpを用いて射影変換（Perspective Transform）を行い、回転を補正します。
+        /// </summary>
         private async Task ProcessDetectionsAsync()
         {
             if (CapturedImage == null) return;
@@ -264,7 +282,7 @@ namespace avalonia_terminal.ViewModels
                             var size = new Size2f(w, h);
                             var rotatedRect = new RotatedRect(center, size, angleDeg);
 
-                            // 切り抜き領域の計算
+                            // 切り抜き領域の4点計算
                             Point2f[] pts = rotatedRect.Points();
                             Point2f tl = new Point2f(), tr = new Point2f(), br = new Point2f(), bl = new Point2f();
                             float min_s = float.MaxValue, max_s = float.MinValue;
@@ -314,6 +332,7 @@ namespace avalonia_terminal.ViewModels
                         }
                         catch (Exception innerEx)
                         {
+                            // 個別の切り抜きエラーはログ出力のみとし、他の抵抗器の処理を続行する
                             Console.WriteLine($"Item Processing Error: {innerEx.Message}");
                         }
                     }
