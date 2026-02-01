@@ -44,7 +44,6 @@ public class SimpleInspectViewModel : ViewModelBase
         Main = main;
         _dbService = new DatabaseService();
 
-        // 【修正】戻るボタン: MJPEGに戻すJSONを送信してからホームへ
         BackCommand = new RelayCommand(async () => 
         {
             await Main.TcpServer.SendJsonAsync(new 
@@ -77,7 +76,6 @@ public class SimpleInspectViewModel : ViewModelBase
             StatusMessage = "検査対象をセットして\n撮影ボタンを押してください";
         });
 
-        // 【修正】保存ボタン: 保存完了後にMJPEGに戻すJSONを送信
         SaveCommand = new RelayCommand(async () =>
         {
             if (CapturedImage == null) return;
@@ -105,12 +103,11 @@ public class SimpleInspectViewModel : ViewModelBase
                     SaveName = timestamp,
                     SaveAbsolutePath = saveDir,
                     ThumbnailPath = thumbPath,
-                    Type = 0,
+                    // Typeは削除済み
                     SimpleOmotePath = filePath
                 };
                 _dbService.InsertInspection(record);
 
-                // MJPEGに戻すJSON送信
                 await Main.TcpServer.SendJsonAsync(new 
                 { 
                     type = "cmd", 

@@ -24,6 +24,7 @@ public class GalleryDateGroupViewModel : ViewModelBase
 {
     public string DateHeader { get; }
     public ObservableCollection<GalleryItemViewModel> Items { get; } = new();
+
     public GalleryDateGroupViewModel(IGrouping<string, InspectionRecord> group, GalleryViewModel parentVM)
     {
         if (DateTime.TryParseExact(group.Key, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
@@ -108,7 +109,7 @@ public class GalleryViewModel : ViewModelBase
         get => _isUpperCase;
         set 
         { 
-            _isUpperCase = value; 
+            _isUpperCase = value;
             RaisePropertyChanged(); 
             RaisePropertyChanged(nameof(CapsButtonText));
             RaisePropertyChanged(nameof(CapsButtonColor));
@@ -148,7 +149,7 @@ public class GalleryViewModel : ViewModelBase
         {
             if (IsDeleteMode) return "削除する画像を選択してください";
             if (IsRenameMode) return "名前を変更する画像を選択してください";
-            return "条件指定";
+            return "日付順に表示中";
         }
     }
 
@@ -164,20 +165,6 @@ public class GalleryViewModel : ViewModelBase
     {
         get => _searchText;
         set { _searchText = value; RaisePropertyChanged(); ApplyFilter(); }
-    }
-
-    private bool _showSimple = true;
-    public bool ShowSimple
-    {
-        get => _showSimple;
-        set { _showSimple = value; RaisePropertyChanged(); ApplyFilter(); }
-    }
-
-    private bool _showPrecision = true;
-    public bool ShowPrecision
-    {
-        get => _showPrecision;
-        set { _showPrecision = value; RaisePropertyChanged(); ApplyFilter(); }
     }
 
     public ICommand HeaderDeleteButtonCommand { get; }
@@ -228,7 +215,6 @@ public class GalleryViewModel : ViewModelBase
 
         ExecuteRenameCommand = new RelayCommand(PerformRename);
         CancelRenameCommand = new RelayCommand(() => { ShowRenameDialog = false; _targetItemForRename = null; });
-
         ToggleCaseCommand = new RelayCommand(() => IsUpperCase = !IsUpperCase);
 
         KeyboardAppendCommand = new LocalRelayCommand<string>(key => 
@@ -414,15 +400,11 @@ public class GalleryViewModel : ViewModelBase
             bool matchText = string.IsNullOrEmpty(SearchText) ||
                              r.SaveName.Contains(SearchText, StringComparison.Ordinal) ||
                              r.Date.Contains(SearchText);
-            bool matchType = (r.Type == 0 && ShowSimple) || (r.Type == 1 && ShowPrecision);
-            return matchText && matchType;
+            return matchText;
         })
         .OrderByDescending(g => g.Date);
-        
-        // 【爆速化ポイント1】表示件数を最新の50件に制限する
-        // これ以上見たい場合は検索機能を使ってもらう運用にする
-        _filteredRecordsList = filteredQuery.Take(50).ToList();
 
+        _filteredRecordsList = filteredQuery.Take(50).ToList();
         var grouped = _filteredRecordsList
             .GroupBy(r => r.Date.Length >= 10 ? r.Date.Substring(0, 10) : r.Date);
         foreach (var group in grouped)
@@ -469,12 +451,12 @@ public class GalleryItemViewModel : ViewModelBase
     private Bitmap? _thumbnail;
     public Bitmap? Thumbnail 
     { 
-        get => _thumbnail; 
+        get => _thumbnail;
         set { _thumbnail = value; RaisePropertyChanged(); }
     }
 
-    public string TypeLabel => Record.Type == 0 ? "簡易" : "精密";
-    public string LabelColor => Record.Type == 0 ? "#007ACC" : "#E06C00";
+    public string TypeLabel => "検査画像";
+    public string LabelColor => "#007ACC";
     
     private bool _isDeleteMode = false;
     public bool IsDeleteMode
@@ -508,7 +490,6 @@ public class GalleryItemViewModel : ViewModelBase
             else if (parentVM.IsRenameMode) parentVM.OnItemClicked(this);
             else parentVM.ShowDetailCommand.Execute(record);
         });
-
         LoadThumbnailAsync();
     }
 
@@ -522,7 +503,6 @@ public class GalleryItemViewModel : ViewModelBase
                 {
                     using (var stream = File.OpenRead(Record.ThumbnailPath))
                     {
-                        // 【爆速化ポイント2】読み込みサイズを320pxから240px(ボタン幅ぴったり)に縮小
                         var bmp = Bitmap.DecodeToWidth(stream, 240);
                         Dispatcher.UIThread.Post(() => Thumbnail = bmp);
                     }
@@ -550,7 +530,7 @@ public class GalleryDetailViewModel : ViewModelBase
     public bool CanGoNextImage => _currentPageIndex < _images.Count - 1;
     public bool CanMovePrevious => CanGoPreviousImage || _parentVM.CanGoPreviousRecord(Record);
     public bool CanMoveNext => CanGoNextImage || _parentVM.CanGoNextRecord(Record);
-    public string TypeLabel => Record.Type == 0 ? "簡易検査" : "精密検査";
+    public string TypeLabel => "画像詳細";
     public string FormattedDate => DateTime.TryParseExact(Record.Date, "yyyy-MM-dd-HH-mm-ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
         ? date.ToString("yyyy年MM月dd日 HH時mm分ss秒") : Record.Date;
     public string BoardInfo => "基板情報: 取得中";
@@ -565,18 +545,13 @@ public class GalleryDetailViewModel : ViewModelBase
         CloseDetailCommand = parent.BackToListCommand;
         
         var paths = new List<string>();
-        if (record.Type == 1) 
-        {
-            paths.Add(record.PrecisionPcbOmotePath);
-            paths.Add(record.PrecisionPcbUraPath);
-            paths.Add(record.PrecisionCircuitOmotePath);
-            paths.Add(record.PrecisionCircuitUraPath);
-        }
-        else 
-        {
-            paths.Add(record.SimpleOmotePath);
-            paths.Add(record.SimpleUraPath);
-        }
+        
+        if (!string.IsNullOrEmpty(record.SimpleOmotePath)) paths.Add(record.SimpleOmotePath);
+        if (!string.IsNullOrEmpty(record.SimpleUraPath)) paths.Add(record.SimpleUraPath);
+        if (!string.IsNullOrEmpty(record.PrecisionPcbOmotePath)) paths.Add(record.PrecisionPcbOmotePath);
+        if (!string.IsNullOrEmpty(record.PrecisionPcbUraPath)) paths.Add(record.PrecisionPcbUraPath);
+        if (!string.IsNullOrEmpty(record.PrecisionCircuitOmotePath)) paths.Add(record.PrecisionCircuitOmotePath);
+        if (!string.IsNullOrEmpty(record.PrecisionCircuitUraPath)) paths.Add(record.PrecisionCircuitUraPath);
 
         foreach (var path in paths)
         {
