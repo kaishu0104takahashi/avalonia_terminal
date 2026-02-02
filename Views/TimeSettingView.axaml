@@ -31,6 +31,16 @@
             <Setter Property="Background" Value="#DDDDDD"/>
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
+        <Style Selector="RepeatButton.UpDn">
+            <Setter Property="Width" Value="75"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#DDDDDD"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto, *, Auto">
@@ -41,46 +51,46 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
             
             <StackPanel>
-                <Button Classes="UpDn" Content="▲" Command="{Binding UpYearCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▲" Command="{Binding UpYearCommand}" Interval="100" Delay="500"/>
                 <TextBlock Classes="Number" Text="{Binding Year}" Width="100"/>
-                <Button Classes="UpDn" Content="▼" Command="{Binding DownYearCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▼" Command="{Binding DownYearCommand}" Interval="100" Delay="500"/>
             </StackPanel>
             <TextBlock Classes="Label" Text="年"/>
 
             <StackPanel>
-                <Button Classes="UpDn" Content="▲" Command="{Binding UpMonthCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▲" Command="{Binding UpMonthCommand}" Interval="100" Delay="500"/>
                 <TextBlock Classes="Number" Text="{Binding Month, StringFormat={}{0:D2}}"/>
-                <Button Classes="UpDn" Content="▼" Command="{Binding DownMonthCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▼" Command="{Binding DownMonthCommand}" Interval="100" Delay="500"/>
             </StackPanel>
             <TextBlock Classes="Label" Text="月"/>
 
             <StackPanel>
-                <Button Classes="UpDn" Content="▲" Command="{Binding UpDayCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▲" Command="{Binding UpDayCommand}" Interval="100" Delay="500"/>
                 <TextBlock Classes="Number" Text="{Binding Day, StringFormat={}{0:D2}}"/>
-                <Button Classes="UpDn" Content="▼" Command="{Binding DownDayCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▼" Command="{Binding DownDayCommand}" Interval="100" Delay="500"/>
             </StackPanel>
             <TextBlock Classes="Label" Text="日"/>
 
             <Border Width="40" />
 
             <StackPanel>
-                <Button Classes="UpDn" Content="▲" Command="{Binding UpHourCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▲" Command="{Binding UpHourCommand}" Interval="100" Delay="500"/>
                 <TextBlock Classes="Number" Text="{Binding Hour, StringFormat={}{0:D2}}"/>
-                <Button Classes="UpDn" Content="▼" Command="{Binding DownHourCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▼" Command="{Binding DownHourCommand}" Interval="100" Delay="500"/>
             </StackPanel>
             <TextBlock Classes="Label" Text=":" FontSize="40" Margin="5,0"/>
 
             <StackPanel>
-                <Button Classes="UpDn" Content="▲" Command="{Binding UpMinuteCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▲" Command="{Binding UpMinuteCommand}" Interval="100" Delay="500"/>
                 <TextBlock Classes="Number" Text="{Binding Minute, StringFormat={}{0:D2}}"/>
-                <Button Classes="UpDn" Content="▼" Command="{Binding DownMinuteCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▼" Command="{Binding DownMinuteCommand}" Interval="100" Delay="500"/>
             </StackPanel>
             <TextBlock Classes="Label" Text=":" FontSize="40" Margin="5,0"/>
 
             <StackPanel>
-                <Button Classes="UpDn" Content="▲" Command="{Binding UpSecondCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▲" Command="{Binding UpSecondCommand}" Interval="100" Delay="500"/>
                 <TextBlock Classes="Number" Text="{Binding Second, StringFormat={}{0:D2}}" Foreground="#007ACC"/>
-                <Button Classes="UpDn" Content="▼" Command="{Binding DownSecondCommand}"/>
+                <RepeatButton Classes="UpDn" Content="▼" Command="{Binding DownSecondCommand}" Interval="100" Delay="500"/>
             </StackPanel>
 
         </StackPanel>

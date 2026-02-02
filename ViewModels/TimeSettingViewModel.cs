@@ -10,22 +10,56 @@ namespace avalonia_terminal.ViewModels
 
         // --- プロパティ ---
         private int _year;
-        public int Year { get => _year; set { _year = value; RaisePropertyChanged(); } }
+        public int Year 
+        { 
+            get => _year; 
+            set 
+            { 
+                _year = value; 
+                ValidateDay(); // 年が変わったらうるう年チェックなど
+                RaisePropertyChanged(); 
+            } 
+        }
 
         private int _month;
-        public int Month { get => _month; set { _month = value; RaisePropertyChanged(); } }
+        public int Month 
+        { 
+            get => _month; 
+            set 
+            { 
+                _month = value; 
+                ValidateDay(); // 月が変わったら日数の最大値チェック
+                RaisePropertyChanged(); 
+            } 
+        }
 
         private int _day;
-        public int Day { get => _day; set { _day = value; RaisePropertyChanged(); } }
+        public int Day 
+        { 
+            get => _day; 
+            set { _day = value; RaisePropertyChanged(); } 
+        }
 
         private int _hour;
-        public int Hour { get => _hour; set { _hour = value; RaisePropertyChanged(); } }
+        public int Hour 
+        { 
+            get => _hour; 
+            set { _hour = value; RaisePropertyChanged(); } 
+        }
 
         private int _minute;
-        public int Minute { get => _minute; set { _minute = value; RaisePropertyChanged(); } }
+        public int Minute 
+        { 
+            get => _minute; 
+            set { _minute = value; RaisePropertyChanged(); } 
+        }
 
         private int _second;
-        public int Second { get => _second; set { _second = value; RaisePropertyChanged(); } }
+        public int Second 
+        { 
+            get => _second; 
+            set { _second = value; RaisePropertyChanged(); } 
+        }
 
         // --- コマンド ---
         public ICommand UpYearCommand { get; }
@@ -38,8 +72,6 @@ namespace avalonia_terminal.ViewModels
         public ICommand DownHourCommand { get; }
         public ICommand UpMinuteCommand { get; }
         public ICommand DownMinuteCommand { get; }
-        
-        // 秒用のコマンド追加
         public ICommand UpSecondCommand { get; }
         public ICommand DownSecondCommand { get; }
 
@@ -66,8 +98,17 @@ namespace avalonia_terminal.ViewModels
             UpMonthCommand = new RelayCommand(() => { if (Month < 12) Month++; else Month = 1; });
             DownMonthCommand = new RelayCommand(() => { if (Month > 1) Month--; else Month = 12; });
 
-            UpDayCommand = new RelayCommand(() => { if (Day < 31) Day++; else Day = 1; });
-            DownDayCommand = new RelayCommand(() => { if (Day > 1) Day--; else Day = 31; });
+            // 日付変更ロジック：その月の最大日数を考慮
+            UpDayCommand = new RelayCommand(() => 
+            { 
+                int maxDays = DateTime.DaysInMonth(Year, Month);
+                if (Day < maxDays) Day++; else Day = 1; 
+            });
+            DownDayCommand = new RelayCommand(() => 
+            { 
+                int maxDays = DateTime.DaysInMonth(Year, Month);
+                if (Day > 1) Day--; else Day = maxDays; 
+            });
 
             UpHourCommand = new RelayCommand(() => { if (Hour < 23) Hour++; else Hour = 0; });
             DownHourCommand = new RelayCommand(() => { if (Hour > 0) Hour--; else Hour = 23; });
@@ -75,7 +116,6 @@ namespace avalonia_terminal.ViewModels
             UpMinuteCommand = new RelayCommand(() => { if (Minute < 59) Minute++; else Minute = 0; });
             DownMinuteCommand = new RelayCommand(() => { if (Minute > 0) Minute--; else Minute = 59; });
 
-            // 秒の増減ロジック
             UpSecondCommand = new RelayCommand(() => { if (Second < 59) Second++; else Second = 0; });
             DownSecondCommand = new RelayCommand(() => { if (Second > 0) Second--; else Second = 59; });
 
@@ -83,12 +123,34 @@ namespace avalonia_terminal.ViewModels
             CancelCommand = new RelayCommand(() => _closeAction?.Invoke());
         }
 
+        /// <summary>
+        /// 現在の年月に対して、日が範囲外なら修正する
+        /// </summary>
+        private void ValidateDay()
+        {
+            try
+            {
+                // 年や月が極端な値のときはDateTime.DaysInMonthがエラーになるのを防ぐガード
+                if (Year < 1 || Month < 1 || Month > 12) return;
+
+                int maxDays = DateTime.DaysInMonth(Year, Month);
+                if (Day > maxDays)
+                {
+                    Day = maxDays;
+                }
+            }
+            catch
+            {
+                // 無視
+            }
+        }
+
         private void ExecuteSave()
         {
             // Linuxのdateコマンドを実行して時刻を設定
             // フォーマット: "yyyy-MM-dd HH:mm:ss"
             string dateStr = $"{Year:D4}-{Month:D2}-{Day:D2} {Hour:D2}:{Minute:D2}:{Second:D2}";
-            
+
             try
             {
                 var psi = new ProcessStartInfo
