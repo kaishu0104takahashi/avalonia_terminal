@@ -8,19 +8,7 @@
              x:DataType="vm:MeasurementViewModel">
 
     <Grid Background="#1E1E1E">
-        <Panel>
-            <Image Source="{Binding LiveImage}" Stretch="Uniform" IsVisible="{Binding !HasResult}"/>
-            
-            <Image Source="{Binding CapturedImage}" Stretch="Uniform" IsVisible="{Binding HasResult}"/>
-            
-            <Border BorderBrush="#00FF00" BorderThickness="2" Width="400" Height="300" 
-                    IsVisible="{Binding !HasResult}" Opacity="0.5" CornerRadius="10">
-                <TextBlock Text="ここに基板をセット" Foreground="#00FF00" 
-                           HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,10"/>
-            </Border>
-        </Panel>
-
-        <Border VerticalAlignment="Top" Background="#80000000" Padding="15">
+        <Border VerticalAlignment="Top" Background="#80000000" Padding="15" ZIndex="10">
             <Grid>
                 <Button Content="＜ 戻る" Command="{Binding BackCommand}" 
                         HorizontalAlignment="Left" Background="#444" Foreground="White" FontSize="18"/>
@@ -29,27 +17,75 @@
             </Grid>
         </Border>
 
-        <Grid VerticalAlignment="Bottom" Margin="0,0,0,30">
+        <Grid ColumnDefinitions="*, 500" Margin="0,60,0,0">
             
-            <Button Content="測定実行" Command="{Binding ExecuteMeasurementCommand}"
-                    IsVisible="{Binding !HasResult}" IsEnabled="{Binding !IsMeasuring}"
-                    HorizontalAlignment="Center" Width="200" Height="80" 
-                    FontSize="28" FontWeight="Bold" CornerRadius="40"
-                    Background="#007ACC" Foreground="White" BorderBrush="White" BorderThickness="2"/>
-
-            <Border IsVisible="{Binding HasResult}" HorizontalAlignment="Center" Background="#CC000000" Padding="30" CornerRadius="15">
-                <StackPanel>
-                    <TextBlock Text="測定結果:" Foreground="#CCC" FontSize="20" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding ResultText}" Foreground="#00FF00" FontSize="50" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10"/>
+            <Grid Grid.Column="0" Background="Black" ClipToBounds="True">
+                <Panel>
+                    <Image Source="{Binding LiveImage}" Stretch="Uniform" IsVisible="{Binding !HasResult}"/>
                     
-                    <Button Content="再測定" Command="{Binding RetryCommand}"
-                            HorizontalAlignment="Center" Margin="0,20,0,0" Width="150" Height="50"
-                            FontSize="20" Background="#555" Foreground="White"/>
-                </StackPanel>
+                    <Image Source="{Binding CapturedImage}" Stretch="Uniform" IsVisible="{Binding HasResult}"/>
+                    
+                    <Border BorderBrush="#00FF00" BorderThickness="2" Width="400" Height="300" 
+                            IsVisible="{Binding !HasResult}" Opacity="0.5" CornerRadius="10">
+                        <TextBlock Text="基板をセットして実行" Foreground="#00FF00" FontSize="20"
+                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,10"/>
+                    </Border>
+                </Panel>
+
+                <Button Content="測定実行" Command="{Binding ExecuteMeasurementCommand}"
+                        IsVisible="{Binding !HasResult}" IsEnabled="{Binding !IsMeasuring}"
+                        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,30"
+                        Width="200" Height="80" FontSize="28" FontWeight="Bold" CornerRadius="40"
+                        Background="#007ACC" Foreground="White" BorderBrush="White" BorderThickness="2"/>
+                
+                <Button Content="再測定" Command="{Binding RetryCommand}"
+                        IsVisible="{Binding HasResult}"
+                        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,30"
+                        Width="200" Height="80" FontSize="28" FontWeight="Bold" CornerRadius="40"
+                        Background="#EF6C00" Foreground="White" BorderBrush="White" BorderThickness="2"/>
+            </Grid>
+
+            <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="1,0,0,0" Padding="10">
+                <Grid RowDefinitions="Auto, *">
+                    <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,10">
+                        <TextBlock Text="測定結果一覧" Foreground="#AAAAAA" FontSize="20" FontWeight="Bold"/>
+                        <Separator Background="#3E3E42" Height="2"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding DetectionItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#3E3E42" Margin="0,0,0,10" CornerRadius="5" Padding="8">
+                                        <Grid ColumnDefinitions="140, *">
+                                            <Border Grid.Column="0" Width="120" Height="120" Background="Black" CornerRadius="4" ClipToBounds="True">
+                                                <Image Source="{Binding CroppedImage}" Stretch="Uniform"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
+                                                <TextBlock Text="{Binding Label}" Foreground="#007ACC" FontWeight="Bold" FontSize="22"/>
+                                                <TextBlock Text="{Binding ValueText}" Foreground="White" FontSize="28" FontWeight="Bold"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    
+                    <TextBlock Grid.Row="1" Text="測定結果がここに表示されます" 
+                               IsVisible="{Binding !HasResult}"
+                               Foreground="#555" FontSize="18" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                               
+                    <TextBlock Grid.Row="1" Text="{Binding ResultText}" 
+                               IsVisible="{Binding IsMeasuring}"
+                               Foreground="#00FF00" FontSize="24" FontWeight="Bold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
             </Border>
         </Grid>
 
-        <Grid IsVisible="{Binding IsMeasuring}" Background="#AA000000">
+        <Grid IsVisible="{Binding IsMeasuring}" Background="#AA000000" ZIndex="20">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
                 <TextBlock Text="測定中..." Foreground="White" FontSize="48" FontWeight="Bold"/>
             </StackPanel>
