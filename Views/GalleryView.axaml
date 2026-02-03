@@ -95,7 +95,8 @@
                                             <DataTemplate>
                                                 <Border Width="240" Height="270" Margin="12" 
                                                         Background="White" BorderBrush="#DDDDDD" BorderThickness="1"
-                                                        Tag="{Binding}"> <Grid>
+                                                        Tag="{Binding}">
+                                                    <Grid>
                                                         <Grid RowDefinitions="*, Auto">
                                                             <Image Grid.Row="0" Source="{Binding Thumbnail}" Stretch="UniformToFill" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="LowQuality"/>
                                                             <Border Grid.Row="1" Background="White" Padding="5" Height="60">
@@ -187,7 +188,7 @@
                                 <TextBlock Grid.Column="1" Text="{Binding Record.SaveName}" Foreground="White" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="30,0,0,0"/>
                             </Grid>
                         </Border>
-                        <Grid Grid.Row="1" ColumnDefinitions="*, 400">
+                        <Grid Grid.Row="1" ColumnDefinitions="*, 750">
                             <Grid Grid.Column="0" Background="Black" ClipToBounds="True">
                                 <Image Source="{Binding CurrentImage}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Button Command="{Binding MovePreviousCommand}" IsVisible="{Binding CanMovePrevious}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0" Background="#60000000" Foreground="White" FontSize="50" Padding="20,15" CornerRadius="40" BorderBrush="White" BorderThickness="2" Content="＜">
@@ -197,21 +198,40 @@
                                     <Button.Styles><Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#90000000"/><Setter Property="BorderBrush" Value="#007ACC"/></Style></Button.Styles>
                                 </Button>
                             </Grid>
-                            <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="1,0,0,0" Padding="25">
-                                <StackPanel Spacing="30">
-                                    <Border Background="#3E3E42" CornerRadius="5" Padding="10" HorizontalAlignment="Right">
-                                        <TextBlock Text="{Binding PageIndicator}" Foreground="White" FontSize="20" FontWeight="Bold"/>
-                                    </Border>
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="保存日時:" Foreground="#AAAAAA" FontSize="16"/>
-                                        <TextBlock Text="{Binding FormattedDate}" Foreground="White" FontSize="20" FontWeight="Bold" TextWrapping="Wrap"/>
+
+                            <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="1,0,0,0" Padding="10">
+                                <Grid RowDefinitions="Auto, *">
+                                    <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,10">
+                                        <Border Background="#3E3E42" CornerRadius="5" Padding="10" HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding PageIndicator}" Foreground="White" FontSize="20" FontWeight="Bold"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding FormattedDate}" Foreground="White" FontSize="16" FontWeight="Bold" TextWrapping="Wrap"/>
+                                        <Separator Background="#3E3E42" Height="2"/>
+                                        <TextBlock Text="検出結果一覧" Foreground="#AAAAAA" FontSize="18"/>
+                                        
+                                        <TextBlock Text="{Binding DetectionStatusMessage}" Foreground="#FFDD00" FontSize="16" TextWrapping="Wrap" IsVisible="{Binding DetectionStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                     </StackPanel>
-                                    <Separator Background="#3E3E42" Height="2"/>
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="基板情報:" Foreground="#AAAAAA" FontSize="16"/>
-                                        <TextBlock Text="{Binding BoardInfo}" Foreground="White" FontSize="18" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </StackPanel>
+
+                                    <ScrollViewer Grid.Row="1">
+                                        <ItemsControl ItemsSource="{Binding DetectionItems}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#3E3E42" Margin="0,0,0,10" CornerRadius="5" Padding="8">
+                                                        <Grid ColumnDefinitions="220, *">
+                                                            <Border Grid.Column="0" Width="200" Height="200" Background="Black" CornerRadius="4" ClipToBounds="True">
+                                                                <Image Source="{Binding CroppedImage}" Stretch="Uniform"/>
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
+                                                                <TextBlock Text="{Binding Label}" Foreground="#007ACC" FontWeight="Bold" FontSize="26"/>
+                                                                <TextBlock Text="{Binding ValueText}" Foreground="White" FontSize="34" FontWeight="Bold"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
                             </Border>
                         </Grid>
                     </Grid>
@@ -239,6 +259,8 @@
                     <TextBlock Grid.Row="1" Text="※フォルダ名とファイル名が変更されます (英数字のみ)" FontSize="18" Foreground="#666666" HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
                     <TextBox Grid.Row="2" Text="{Binding RenameInput}" Watermark="入力してください" FontSize="40" Padding="10" Margin="30,10" HorizontalAlignment="Stretch" VerticalAlignment="Top" TextAlignment="Center"/>
+                    
+                    <TextBlock Grid.Row="2" Text="{Binding RenameErrorMessage}" Foreground="#FF5252" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,85,0,0"/>
 
                     <StackPanel Grid.Row="2" VerticalAlignment="Center" Margin="0,80,0,0" Spacing="5">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

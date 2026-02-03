@@ -12,6 +12,7 @@ using System.Globalization;
 using System.IO; 
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using OpenCvSharp;
 
 namespace avalonia_terminal.ViewModels;
 
@@ -65,7 +66,7 @@ public class GalleryViewModel : ViewModelBase
         get => _isDeleteMode;
         set 
         { 
-            _isDeleteMode = value;
+            _isDeleteMode = value; 
             RaisePropertyChanged(); 
             if(value) IsRenameMode = false;
             UpdateItemsMode();
@@ -109,7 +110,7 @@ public class GalleryViewModel : ViewModelBase
         get => _isUpperCase;
         set 
         { 
-            _isUpperCase = value;
+            _isUpperCase = value; 
             RaisePropertyChanged(); 
             RaisePropertyChanged(nameof(CapsButtonText));
             RaisePropertyChanged(nameof(CapsButtonColor));
@@ -117,6 +118,13 @@ public class GalleryViewModel : ViewModelBase
     }
     public string CapsButtonText => IsUpperCase ? "A" : "a";
     public string CapsButtonColor => IsUpperCase ? "#007ACC" : "#888888";
+
+    private string _renameErrorMessage = "";
+    public string RenameErrorMessage
+    {
+        get => _renameErrorMessage;
+        set { _renameErrorMessage = value; RaisePropertyChanged(); }
+    }
 
     private string _renameInput = "";
     public string RenameInput
@@ -127,6 +135,7 @@ public class GalleryViewModel : ViewModelBase
             if (string.IsNullOrEmpty(value) || Regex.IsMatch(value, "^[a-zA-Z0-9_-]*$"))
             {
                 _renameInput = value;
+                RenameErrorMessage = "";
                 RaisePropertyChanged();
             }
         }
@@ -143,6 +152,7 @@ public class GalleryViewModel : ViewModelBase
 
     public string DeleteButtonText => IsDeleteMode ? "実行" : "削除";
     public string RenameButtonText => IsRenameMode ? "キャンセル" : "名前変更";
+
     public string StatusMessage
     {
         get
@@ -199,6 +209,7 @@ public class GalleryViewModel : ViewModelBase
         BackToListCommand = new RelayCommand(ExecuteBackToList);
         
         ShowDetailCommand = new RelayCommand<InspectionRecord>(r => OpenDetail(r, startFromEnd: false));
+
         HeaderDeleteButtonCommand = new RelayCommand(() =>
         {
             if (!IsDeleteMode) IsDeleteMode = true;
@@ -215,6 +226,7 @@ public class GalleryViewModel : ViewModelBase
 
         ExecuteRenameCommand = new RelayCommand(PerformRename);
         CancelRenameCommand = new RelayCommand(() => { ShowRenameDialog = false; _targetItemForRename = null; });
+        
         ToggleCaseCommand = new RelayCommand(() => IsUpperCase = !IsUpperCase);
 
         KeyboardAppendCommand = new LocalRelayCommand<string>(key => 
@@ -272,6 +284,7 @@ public class GalleryViewModel : ViewModelBase
         {
             _targetItemForRename = item;
             RenameInput = item.Record.SaveName;
+            RenameErrorMessage = ""; 
             ShowRenameDialog = true;
         }
     }
@@ -335,6 +348,7 @@ public class GalleryViewModel : ViewModelBase
     private void PerformRename()
     {
         if (_targetItemForRename == null || string.IsNullOrWhiteSpace(RenameInput)) return;
+
         string oldName = _targetItemForRename.Record.SaveName;
         string newName = RenameInput;
         string oldPath = _targetItemForRename.Record.SaveAbsolutePath;
@@ -345,7 +359,11 @@ public class GalleryViewModel : ViewModelBase
 
         try
         {
-            if (Directory.Exists(newPath)) { Console.WriteLine("既に同名のフォルダが存在します"); return; }
+            if (Directory.Exists(newPath)) 
+            { 
+                RenameErrorMessage = "既に同名のフォルダが存在します";
+                return; 
+            }
 
             Directory.Move(oldPath, newPath);
             string[] files = Directory.GetFiles(newPath);
@@ -407,6 +425,7 @@ public class GalleryViewModel : ViewModelBase
         _filteredRecordsList = filteredQuery.Take(50).ToList();
         var grouped = _filteredRecordsList
             .GroupBy(r => r.Date.Length >= 10 ? r.Date.Substring(0, 10) : r.Date);
+
         foreach (var group in grouped)
         {
             DisplayGroups.Add(new GalleryDateGroupViewModel(group, this));
@@ -518,12 +537,25 @@ public class GalleryDetailViewModel : ViewModelBase
     private readonly GalleryViewModel _parentVM;
     public InspectionRecord Record { get; }
     private List<Bitmap> _images = new();
+    private List<string> _imagePaths = new(); 
     private Bitmap? _currentImage;
     public Bitmap? CurrentImage
     {
         get => _currentImage;
         set { _currentImage = value; RaisePropertyChanged(); }
     }
+    
+    // 検出結果リスト
+    public ObservableCollection<GalleryDetectionItem> DetectionItems { get; } = new();
+
+    // 【追加】デバッグ用メッセージ
+    private string _detectionStatusMessage = "読み込み中...";
+    public string DetectionStatusMessage
+    {
+        get => _detectionStatusMessage;
+        set { _detectionStatusMessage = value; RaisePropertyChanged(); }
+    }
+    
     private int _currentPageIndex = 0;
     public string PageIndicator => _images.Count > 0 ? $"{_currentPageIndex + 1} / {_images.Count}" : "";
     public bool CanGoPreviousImage => _currentPageIndex > 0;
@@ -557,7 +589,11 @@ public class GalleryDetailViewModel : ViewModelBase
         {
             if (!string.IsNullOrEmpty(path) && File.Exists(path))
             {
-                try { _images.Add(new Bitmap(path)); }
+                try 
+                { 
+                    _images.Add(new Bitmap(path)); 
+                    _imagePaths.Add(path);
+                }
                 catch { }
             }
         }
@@ -570,6 +606,8 @@ public class GalleryDetailViewModel : ViewModelBase
         }
         
         UpdateNavigationState();
+        LoadDetections();
+
         MoveNextCommand = new RelayCommand(() =>
         {
             if (CanGoNextImage)
@@ -577,6 +615,7 @@ public class GalleryDetailViewModel : ViewModelBase
                 _currentPageIndex++;
                 CurrentImage = _images[_currentPageIndex];
                 UpdateNavigationState();
+                LoadDetections();
             }
             else if (_parentVM.CanGoNextRecord(Record))
             {
@@ -590,6 +629,7 @@ public class GalleryDetailViewModel : ViewModelBase
                 _currentPageIndex--;
                 CurrentImage = _images[_currentPageIndex];
                 UpdateNavigationState();
+                LoadDetections();
             }
             else if (_parentVM.CanGoPreviousRecord(Record))
             {
@@ -603,5 +643,78 @@ public class GalleryDetailViewModel : ViewModelBase
         RaisePropertyChanged(nameof(PageIndicator));
         RaisePropertyChanged(nameof(CanMovePrevious));
         RaisePropertyChanged(nameof(CanMoveNext));
+    }
+    
+    private void LoadDetections()
+    {
+        DetectionItems.Clear();
+        DetectionStatusMessage = "データ確認中...";
+        
+        if (_currentPageIndex < 0 || _currentPageIndex >= _imagePaths.Count) return;
+        string currentPath = _imagePaths[_currentPageIndex];
+
+        Task.Run(() => 
+        {
+            try
+            {
+                var db = new DatabaseService();
+                var detections = db.GetDetections(Record.SaveName);
+
+                if (detections.Count == 0)
+                {
+                    Dispatcher.UIThread.Post(() => DetectionStatusMessage = "検出データがありません");
+                    return;
+                }
+
+                using var src = Cv2.ImRead(currentPath);
+                if (src.Empty())
+                {
+                     Dispatcher.UIThread.Post(() => DetectionStatusMessage = "画像読み込みエラー");
+                     return;
+                }
+
+                var items = new List<GalleryDetectionItem>();
+
+                foreach (var det in detections)
+                {
+                    if (det.YoloObb == null) continue;
+
+                    var center = new Point2f(det.YoloObb.CenterX, det.YoloObb.CenterY);
+                    var size = new Size2f(det.YoloObb.Width, det.YoloObb.Height);
+                    float angleDeg = det.YoloObb.RotationRad * 180f / (float)Math.PI;
+
+                    var rotatedRect = new RotatedRect(center, size, angleDeg);
+                    var rectSize = rotatedRect.Size;
+                    if (rectSize.Width <= 0 || rectSize.Height <= 0) continue;
+
+                    using var cropped = new Mat();
+                    Cv2.GetRectSubPix(src, new OpenCvSharp.Size((int)rectSize.Width, (int)rectSize.Height), rotatedRect.Center, cropped);
+                    
+                    var bmp = MatToBitmap(cropped);
+                    items.Add(new GalleryDetectionItem(det.DetectionId, det.Value ?? "", bmp));
+                }
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    foreach(var i in items) DetectionItems.Add(i);
+                    DetectionStatusMessage = items.Count > 0 ? "" : "表示対象がありません";
+                });
+            }
+            catch (Exception ex)
+            {
+                Dispatcher.UIThread.Post(() => DetectionStatusMessage = $"エラー: {ex.Message}");
+            }
+        });
+    }
+
+    private Avalonia.Media.Imaging.Bitmap? MatToBitmap(Mat mat)
+    {
+        try
+        {
+            using var ms = mat.ToMemoryStream(".png");
+            ms.Position = 0;
+            return new Avalonia.Media.Imaging.Bitmap(ms);
+        }
+        catch { return null; }
     }
 }
