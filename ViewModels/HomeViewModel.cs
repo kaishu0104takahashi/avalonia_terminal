@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-
 namespace avalonia_terminal.ViewModels;
 
 public class HomeViewModel : ViewModelBase
@@ -13,7 +12,6 @@ public class HomeViewModel : ViewModelBase
     private readonly MainViewModel _main;
     
     public Bitmap? CameraImage => _main.CameraImage;
-
     private string _currentDateTime = "";
     public string CurrentDateTime
     {
@@ -25,7 +23,7 @@ public class HomeViewModel : ViewModelBase
     public ICommand GalleryCommand { get; }
     public ICommand MeasurementCommand { get; }
     public ICommand TimeSettingCommand { get; }
-    public ICommand JsonModeCommand { get; }
+    // JsonModeCommand 削除
     public ICommand StopCommand { get; }            
     public ICommand ShutdownJetsonCommand { get; }  
     public ICommand ShutdownAllCommand { get; }     
@@ -42,26 +40,22 @@ public class HomeViewModel : ViewModelBase
             return true; 
         }, TimeSpan.FromSeconds(1));
 
-        // 【修正】遷移時は送信しない
         CaptureCommand = new RelayCommand(() => 
         {
             Cleanup();
             _main.Navigate(new SimpleInspectViewModel(_main));
         });
-
         GalleryCommand = new RelayCommand(() => 
         {
             Cleanup();
             _main.Navigate(new GalleryViewModel(_main));
         });
-        
-        // 【修正】遷移時は送信しない
+
         MeasurementCommand = new RelayCommand(() => 
         {
             Cleanup();
             _main.Navigate(new MeasurementViewModel(_main));
         });
-
         TimeSettingCommand = new RelayCommand(() =>
         {
              Cleanup();
@@ -71,12 +65,7 @@ public class HomeViewModel : ViewModelBase
              }));
         });
         
-        JsonModeCommand = new RelayCommand(() =>
-        {
-            Cleanup();
-            _main.IsCameraPaused = true; 
-            _main.Navigate(new JsonDisplayViewModel(_main));
-        });
+        // JsonModeCommand 初期化削除
 
         StopCommand = new RelayCommand(_main.ShutdownApplication);
 
@@ -90,7 +79,6 @@ public class HomeViewModel : ViewModelBase
                 args = new { } 
             });
         });
-
         // 全電源オフ
         ShutdownAllCommand = new RelayCommand(async () =>
         {
