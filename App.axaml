@@ -1,10 +1,20 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:avalonia_terminal"
+             xmlns:conv="using:avalonia_terminal.Converters"
              x:Class="avalonia_terminal.App">
+    
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
+    
+    <Application.Resources>
+        <conv:BooleanToGridSpanConverter x:Key="BoolToGridSpan"/>
+        <conv:BooleanToGridColumnConverter x:Key="BoolToGridColumn"/>
+        <conv:InvertBoolConverter x:Key="InvertBool"/>
+        <conv:BoolToWindowStateConverter x:Key="BoolToWindowState"/>
+        <conv:BoolToSystemDecorationsConverter x:Key="BoolToSystemDecorations"/>
+    </Application.Resources>
     
     <Application.Styles>
         <FluentTheme />
@@ -27,9 +37,6 @@
             <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
         </Style>
         <Style Selector="AccessText">
-            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
-        </Style>
-        <Style Selector="ContentPresenter">
             <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
         </Style>
     </Application.Styles>

@@ -94,6 +94,9 @@ namespace avalonia_terminal.ViewModels
             DetectionItems.Clear();
             _mainViewModel.LatestDetections.Clear();
 
+            // ★重要: コマンド送信前の時刻を記録
+            var startTime = DateTime.Now;
+
             // 推論開始トリガー (YUV422)
             await _mainViewModel.TcpServer.SendJsonAsync(new 
             { 
@@ -104,16 +107,30 @@ namespace avalonia_terminal.ViewModels
 
             Console.WriteLine("Waiting for detection result...");
 
-            // データ受信待ち (★修正: 3秒 -> 5秒に延長)
-            for (int i = 0; i < 50; i++)
+            // ★修正: 新しいデータが来るまで待機 (最大20秒)
+            // 検出数が0の場合でも、受信時刻が更新されれば「受信した」とみなして進む
+            bool received = false;
+            for (int i = 0; i < 200; i++) // 200 * 100ms = 20秒
             {
-                if (_mainViewModel.LatestDetections.Count > 0)
+                if (_mainViewModel.LastDataReceivedTime > startTime)
                 {
                     Console.WriteLine($"Data received! Count: {_mainViewModel.LatestDetections.Count}");
+                    received = true;
                     break;
                 }
                 await Task.Delay(100);
             }
+
+            if (!received)
+            {
+                Console.WriteLine("Timeout waiting for data.");
+                ResultText = "タイムアウト: データ受信なし";
+                IsMeasuring = false;
+                return;
+            }
+
+            // 受信完了後、少しだけ待って画像と同期させる
+            await Task.Delay(500);
 
             if (_mainViewModel.CameraImage != null)
             {

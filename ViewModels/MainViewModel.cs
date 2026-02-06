@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -31,6 +32,8 @@ public class MainViewModel : ViewModelBase
     private readonly UdpVideoReceiver _videoReceiver;
     public TcpJsonClient TcpServer { get; }
 
+    public bool IsConnected => TcpServer.IsConnected;
+
     private Bitmap? _cameraImage;
     public Bitmap? CameraImage
     {
@@ -50,8 +53,11 @@ public class MainViewModel : ViewModelBase
         }
     }
 
-    // 最新の検出データ（detection_data型）
     public List<detection_data> LatestDetections { get; set; } = new();
+
+    public DateTime LastDataReceivedTime { get; private set; } = DateTime.MinValue;
+
+    public ICommand ToggleFullScreenCommand { get; }
 
     private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
@@ -62,6 +68,8 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
+        ToggleFullScreenCommand = new RelayCommand(() => IsFullScreen = !IsFullScreen);
+
         _videoReceiver = new UdpVideoReceiver(50000);
         _videoReceiver.OnFrameReceived += (bmp) => Dispatcher.UIThread.Post(() => CameraImage = bmp);
         _videoReceiver.Start();
@@ -77,10 +85,11 @@ public class MainViewModel : ViewModelBase
                 {
                     var response = JsonSerializer.Deserialize<type_data_json>(json, _jsonOptions);
                     
-                    if (response != null && response.detections != null)
+                    if (response != null)
                     {
-                        LatestDetections = response.detections;
-                        Console.WriteLine($"[JSON] Updated: {LatestDetections.Count} items");
+                        LatestDetections = response.detections ?? new List<detection_data>();
+                        LastDataReceivedTime = DateTime.Now;
+                        Console.WriteLine($"[JSON] Updated: {LatestDetections.Count} items at {LastDataReceivedTime:HH:mm:ss.fff}");
                     }
                 }
             }

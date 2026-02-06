@@ -1,42 +1,48 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:avalonia_terminal.ViewModels"
-        xmlns:conv="clr-namespace:avalonia_terminal.Converters"
+        xmlns:vm="using:avalonia_terminal.ViewModels"
         x:Class="avalonia_terminal.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="基板検査システム (avalonia_terminal)"
-        WindowState="FullScreen"
-        SystemDecorations="None">
+        WindowState="{Binding IsFullScreen, Converter={StaticResource BoolToWindowState}}"
+        SystemDecorations="{Binding IsFullScreen, Converter={StaticResource BoolToSystemDecorations}}">
 
     <Design.DataContext>
         <vm:MainViewModel/>
     </Design.DataContext>
 
-    <Window.Resources>
-        <conv:BooleanToGridSpanConverter x:Key="BoolToGridSpan"/>
-        <conv:BooleanToGridColumnConverter x:Key="BoolToGridColumn"/>
-        <conv:InvertBoolConverter x:Key="InvertBool"/>
-    </Window.Resources>
+    <Grid>
+        <Grid x:Name="MainLayoutGrid" ColumnDefinitions="2*, 1*">
+            <Border Grid.Column="0" Margin="10" Background="#333" CornerRadius="5" ClipToBounds="True"
+                    IsVisible="{Binding IsFullScreen, Converter={StaticResource InvertBool}}">
+                <Panel>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding CameraImage, Converter={x:Static ObjectConverters.IsNull}}">
+                        <TextBlock Text="Waiting for Camera Input..." Foreground="#888" HorizontalAlignment="Center"/>
+                        <TextBlock Text="UDP Port: 50000" Foreground="#666" FontSize="12" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                    </StackPanel>
 
-    <Grid x:Name="MainLayoutGrid" ColumnDefinitions="2*, 1*">
+                    <Image Source="{Binding CameraImage}" Stretch="Uniform" />
+                </Panel>
+            </Border>
 
-        <Border Grid.Column="0" Margin="10" Background="#333" CornerRadius="5" ClipToBounds="True"
-                IsVisible="{Binding IsFullScreen, Converter={StaticResource InvertBool}}">
+            <ContentControl
+                Content="{Binding CurrentViewModel}"
+                Margin="10"
+                Grid.Column="{Binding IsFullScreen, Converter={StaticResource BoolToGridColumn}}"
+                Grid.ColumnSpan="{Binding IsFullScreen, Converter={StaticResource BoolToGridSpan}}"/>
+        </Grid>
+
+        <Button Command="{Binding ToggleFullScreenCommand}"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="10" Padding="15,8"
+                Background="#80000000" Foreground="White"
+                BorderBrush="White" BorderThickness="1"
+                CornerRadius="5" ZIndex="999">
             <Panel>
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                            IsVisible="{Binding CameraImage, Converter={x:Static ObjectConverters.IsNull}}">
-                    <TextBlock Text="Waiting for Camera Input..." Foreground="#888" HorizontalAlignment="Center"/>
-                    <TextBlock Text="UDP Port: 50000" Foreground="#666" FontSize="12" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                </StackPanel>
-
-                <Image Source="{Binding CameraImage}" Stretch="Uniform" />
+                <TextBlock Text="⤢ 全画面解除" IsVisible="{Binding IsFullScreen}" FontWeight="Bold" FontSize="16"/>
+                <TextBlock Text="⤢ 全画面" IsVisible="{Binding !IsFullScreen}" FontWeight="Bold" FontSize="16"/>
             </Panel>
-        </Border>
-
-        <ContentControl
-            Content="{Binding CurrentViewModel}"
-            Margin="10"
-            Grid.Column="{Binding IsFullScreen, Converter={StaticResource BoolToGridColumn}}"
-            Grid.ColumnSpan="{Binding IsFullScreen, Converter={StaticResource BoolToGridSpan}}"/>
+        </Button>
     </Grid>
 </Window>

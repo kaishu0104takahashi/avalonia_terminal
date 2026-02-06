@@ -19,6 +19,9 @@ public class TcpJsonClient
     public event Action<string>? OnJsonReceived;
     public event Action<string>? OnStatusChanged;
 
+    // ★追加: 接続状態を確認するプロパティ
+    public bool IsConnected => _currentClient != null && _currentClient.Connected;
+
     public TcpJsonClient(int port)
     {
         _port = port;

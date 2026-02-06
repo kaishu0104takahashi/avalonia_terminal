@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic; // 追加
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -62,10 +62,12 @@ public class SimpleInspectViewModel : ViewModelBase
         {
             if (Main.CameraImage != null)
             {
-                // 1. 以前の検出データをクリア
                 Main.LatestDetections.Clear();
+                
+                // ★重要: 送信前の時刻を記録
+                var startTime = DateTime.Now;
 
-                // 2. 画質変更コマンド送信 (推論開始)
+                // 推論開始
                 await Main.TcpServer.SendJsonAsync(new 
                 { 
                     type = "cmd", 
@@ -75,12 +77,22 @@ public class SimpleInspectViewModel : ViewModelBase
 
                 StatusMessage = "高画質撮影中...";
                 
-                // 3. データ受信待ち (ポーリング)
-                // タイムアウトを 3秒 -> 5秒 に延長
-                for (int i = 0; i < 50; i++)
+                // ★修正: 新しいデータが来るまで待機 (最大20秒)
+                bool received = false;
+                for (int i = 0; i < 200; i++)
                 {
-                    if (Main.LatestDetections.Count > 0) break;
+                    if (Main.LastDataReceivedTime > startTime)
+                    {
+                        received = true;
+                        break;
+                    }
                     await Task.Delay(100);
+                }
+
+                if (!received)
+                {
+                    StatusMessage = "エラー: データ受信タイムアウト";
+                    return;
                 }
 
                 // 4. 撮影確定
@@ -88,7 +100,8 @@ public class SimpleInspectViewModel : ViewModelBase
                 CapturedImage = Main.CameraImage;
                 IsCaptured = true;
                 
-                int count = Main.LatestDetections.Count;
+                // ★修正: 最新の検出数 (0個でも) を表示
+                int count = Main.LatestDetections?.Count ?? 0;
                 StatusMessage = $"検出: {count}個\nこの画像で保存しますか？";
             }
         });
@@ -121,7 +134,6 @@ public class SimpleInspectViewModel : ViewModelBase
                 string thumbPath = Path.Combine(saveDir, "thumb.bmp");
                 CapturedImage.Save(thumbPath);
 
-                // 1. メインレコード保存
                 _dbService.Initialize();
                 var record = new InspectionRecord
                 {
@@ -133,15 +145,11 @@ public class SimpleInspectViewModel : ViewModelBase
                 };
                 _dbService.InsertInspection(record);
 
-                // 2. 詳細テーブルの作成と保存
-                // ★修正: 検出数が0でもテーブルを作成するように変更
-                // (nullなら空リストを渡す)
                 var detectionsToSave = Main.LatestDetections ?? new List<detection_data>();
                 
                 _dbService.CreateDetectionTableAndInsert(timestamp, detectionsToSave);
                 Console.WriteLine($"Saved {detectionsToSave.Count} detections to table '{timestamp}'");
 
-                // MJPEGに戻してホームへ
                 await Main.TcpServer.SendJsonAsync(new 
                 { 
                     type = "cmd", 
