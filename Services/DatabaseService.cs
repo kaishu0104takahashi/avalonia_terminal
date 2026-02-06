@@ -43,7 +43,7 @@ public class DatabaseService
         command.ExecuteNonQuery();
     }
 
-    public void CreateDetectionTableAndInsert(string saveName, List<DetectionItem> detections)
+    public void CreateDetectionTableAndInsert(string saveName, List<detection_data> detections)
     {
         string tableName = $"\"{saveName}\"";
         using var connection = new SqliteConnection(DbPath);
@@ -68,18 +68,19 @@ public class DatabaseService
 
             foreach (var item in detections)
             {
-                if (item.YoloObb == null) continue;
+                if (item.yolo_obb == null) continue;
+
                 string insertSql = $@"
                     INSERT INTO {tableName} (detection_id, value, center_x, center_y, width, height, rotation_rad)
                     VALUES ($id, $val, $cx, $cy, $w, $h, $rot)";
                 using var cmdInsert = new SqliteCommand(insertSql, connection, transaction);
-                cmdInsert.Parameters.AddWithValue("$id", item.DetectionId);
-                cmdInsert.Parameters.AddWithValue("$val", (object?)item.Value ?? DBNull.Value);
-                cmdInsert.Parameters.AddWithValue("$cx", item.YoloObb.CenterX);
-                cmdInsert.Parameters.AddWithValue("$cy", item.YoloObb.CenterY);
-                cmdInsert.Parameters.AddWithValue("$w", item.YoloObb.Width);
-                cmdInsert.Parameters.AddWithValue("$h", item.YoloObb.Height);
-                cmdInsert.Parameters.AddWithValue("$rot", item.YoloObb.RotationRad);
+                cmdInsert.Parameters.AddWithValue("$id", item.detection_id);
+                cmdInsert.Parameters.AddWithValue("$val", (object?)item.value ?? DBNull.Value);
+                cmdInsert.Parameters.AddWithValue("$cx", item.yolo_obb.center_x);
+                cmdInsert.Parameters.AddWithValue("$cy", item.yolo_obb.center_y);
+                cmdInsert.Parameters.AddWithValue("$w", item.yolo_obb.width);
+                cmdInsert.Parameters.AddWithValue("$h", item.yolo_obb.height);
+                cmdInsert.Parameters.AddWithValue("$rot", item.yolo_obb.rotation_rad);
                 cmdInsert.ExecuteNonQuery();
             }
             transaction.Commit();
@@ -129,7 +130,6 @@ public class DatabaseService
         return list;
     }
 
-    // 【追加】特定の抵抗値を更新するメソッド
     public void UpdateDetectionValue(string saveName, int detectionId, string newValue)
     {
         string tableName = $"\"{saveName}\"";
@@ -172,7 +172,7 @@ public class DatabaseService
                 r.SaveName = reader.GetString(1);
                 r.SaveAbsolutePath = reader.GetString(2);
                 r.Date = reader.GetString(3);
-                
+
                 if (!string.IsNullOrEmpty(r.SaveAbsolutePath) && Directory.Exists(r.SaveAbsolutePath))
                 {
                     string folderName = Path.GetFileName(r.SaveAbsolutePath);
@@ -286,6 +286,7 @@ public class DatabaseService
         using var transaction = connection.BeginTransaction();
         try
         {
+            // 1. メインレコードの更新
             using (var cmdUpdate = new SqliteCommand("UPDATE inspection SET save_name = $n, save_absolute_path = $p WHERE id = $id", connection, transaction))
             {
                 cmdUpdate.Parameters.AddWithValue("$id", id);
@@ -294,19 +295,58 @@ public class DatabaseService
                 cmdUpdate.ExecuteNonQuery();
             }
 
+            // 2. 詳細テーブルのリネーム
             if (!string.IsNullOrEmpty(oldName) && oldName != newName)
             {
-                string renameSql = $"ALTER TABLE \"{oldName}\" RENAME TO \"{newName}\"";
-                using (var cmdRename = new SqliteCommand(renameSql, connection, transaction))
+                string checkTableSql = "SELECT name FROM sqlite_master WHERE type='table' AND name=@oldName";
+                bool tableExists = false;
+                using (var cmdCheck = new SqliteCommand(checkTableSql, connection, transaction))
                 {
-                    try { cmdRename.ExecuteNonQuery(); } catch { }
+                    cmdCheck.Parameters.AddWithValue("@oldName", oldName);
+                    var result = cmdCheck.ExecuteScalar();
+                    tableExists = (result != null);
+                }
+
+                if (tableExists)
+                {
+                    // ★修正: 大文字小文字の違いのみの場合は、一時テーブル名を経由する
+                    bool isCaseChangeOnly = string.Equals(oldName, newName, StringComparison.OrdinalIgnoreCase);
+
+                    if (isCaseChangeOnly)
+                    {
+                        // 1. 古い名前 -> 一時名
+                        string tempName = oldName + "_TEMP_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                        string renameTempSql = $"ALTER TABLE \"{oldName}\" RENAME TO \"{tempName}\"";
+                        using (var cmdTemp = new SqliteCommand(renameTempSql, connection, transaction))
+                        {
+                            cmdTemp.ExecuteNonQuery();
+                        }
+
+                        // 2. 一時名 -> 新しい名前
+                        string renameFinalSql = $"ALTER TABLE \"{tempName}\" RENAME TO \"{newName}\"";
+                        using (var cmdFinal = new SqliteCommand(renameFinalSql, connection, transaction))
+                        {
+                            cmdFinal.ExecuteNonQuery();
+                        }
+                    }
+                    else
+                    {
+                        // 通常のリネーム
+                        string renameSql = $"ALTER TABLE \"{oldName}\" RENAME TO \"{newName}\"";
+                        using (var cmdRename = new SqliteCommand(renameSql, connection, transaction))
+                        {
+                            cmdRename.ExecuteNonQuery();
+                        }
+                    }
                 }
             }
             transaction.Commit();
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"Update Name Error: {ex.Message}");
             transaction.Rollback();
+            throw; 
         }
     }
 }

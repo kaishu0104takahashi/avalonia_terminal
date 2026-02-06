@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using avalonia_terminal.ViewModels;
+using avalonia_terminal.Models;
 
 namespace avalonia_terminal.Views;
 
@@ -28,10 +29,9 @@ public partial class GalleryView : UserControl
     }
 
     // ----------------------------------------------------------------
-    // 1. キーボード・フォーカス制御（元の機能）
+    // 1. キーボード・フォーカス制御
     // ----------------------------------------------------------------
 
-    // テキストボックスにフォーカスが当たったとき、自動でキーボードを表示
     public void OnSearchBoxFocused(object? sender, GotFocusEventArgs e)
     {
         if (DataContext is GalleryViewModel vm)
@@ -43,7 +43,6 @@ public partial class GalleryView : UserControl
         }
     }
 
-    // 画面のどこかがクリックされたとき（キーボードを閉じる判定）
     public void OnBackgroundClicked(object? sender, PointerPressedEventArgs e)
     {
         var source = e.Source as Visual;
@@ -55,7 +54,6 @@ public partial class GalleryView : UserControl
         bool isTextBox = IsChildOf(source, searchBox);
         bool isKeyboard = IsChildOf(source, keyboardContainer);
 
-        // テキストボックスでもキーボードでもない場所なら、キーボードを閉じる
         if (!isTextBox && !isKeyboard)
         {
             var topLevel = TopLevel.GetTopLevel(this);
@@ -82,12 +80,12 @@ public partial class GalleryView : UserControl
 
 
     // ----------------------------------------------------------------
-    // 2. タッチスクロール制御（新しい機能）
+    // 2. タッチスクロール制御（汎用版）
     // ----------------------------------------------------------------
 
     private void OnScrollPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        var scrollViewer = this.FindControl<ScrollViewer>("MainScroll");
+        var scrollViewer = sender as ScrollViewer;
         if (scrollViewer == null) return;
 
         var properties = e.GetCurrentPoint(this).Properties;
@@ -98,8 +96,6 @@ public partial class GalleryView : UserControl
             _isDragging = true;
             _isScrollAction = false;
             
-            // スクロール操作を開始したら、キーボードを閉じるなどの処理も走らせる
-            // (OnBackgroundClickedが親Gridで拾ってくれるはずだが、念のためここでもキャプチャ)
             e.Pointer.Capture(scrollViewer);
         }
     }
@@ -107,14 +103,12 @@ public partial class GalleryView : UserControl
     private void OnScrollPointerMoved(object? sender, PointerEventArgs e)
     {
         if (!_isDragging) return;
-
-        var scrollViewer = this.FindControl<ScrollViewer>("MainScroll");
+        var scrollViewer = sender as ScrollViewer;
         if (scrollViewer == null) return;
 
         var currentPoint = e.GetPosition(this);
         var deltaY = _startPoint.Y - currentPoint.Y;
 
-        // 5ピクセル以上動いたらスクロールとみなす
         if (Math.Abs(deltaY) > 5)
         {
             _isScrollAction = true;
@@ -125,7 +119,6 @@ public partial class GalleryView : UserControl
     private void OnScrollPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (!_isDragging) return;
-
         _isDragging = false;
         e.Pointer.Capture(null);
 
@@ -138,9 +131,21 @@ public partial class GalleryView : UserControl
             if (result != null)
             {
                 var border = FindParentBorderWithTag(result);
-                if (border != null && border.Tag is GalleryItemViewModel itemVM)
+                if (border != null)
                 {
-                    itemVM.ItemClickCommand.Execute(null);
+                    // 一覧モード (GalleryItemViewModel)
+                    if (border.Tag is GalleryItemViewModel itemVM)
+                    {
+                        itemVM.ItemClickCommand.Execute(null);
+                    }
+                    // 詳細モード (GalleryDetectionItem)
+                    else if (border.Tag is GalleryDetectionItem detectionItem)
+                    {
+                        if (DataContext is GalleryViewModel vm && vm.DetailViewModel != null)
+                        {
+                            vm.DetailViewModel.ItemEditCommand.Execute(detectionItem);
+                        }
+                    }
                 }
             }
         }
@@ -151,7 +156,7 @@ public partial class GalleryView : UserControl
         var current = start;
         while (current != null)
         {
-            if (current is Border border && border.Tag is GalleryItemViewModel)
+            if (current is Border border && border.Tag != null)
             {
                 return border;
             }

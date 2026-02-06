@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -28,8 +29,6 @@ public class MainViewModel : ViewModelBase
     }
 
     private readonly UdpVideoReceiver _videoReceiver;
-    
-    // アプリ全体で共有するTCPサーバー (Port 55555)
     public TcpJsonClient TcpServer { get; }
 
     private Bitmap? _cameraImage;
@@ -46,81 +45,62 @@ public class MainViewModel : ViewModelBase
         set 
         {
             _isCameraPaused = value;
-            if (_videoReceiver != null)
-            {
-                _videoReceiver.IsPaused = value;
-            }
+            if (_videoReceiver != null) _videoReceiver.IsPaused = value;
             RaisePropertyChanged();
         }
     }
 
-    // 【追加】最新の検出データ（保存ボタンを押すまでここに保持する）
-    public List<DetectionItem> LatestDetections { get; set; } = new();
+    // 最新の検出データ（detection_data型）
+    public List<detection_data> LatestDetections { get; set; } = new();
+
+    private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
     public MainViewModel()
     {
-        // 1. 映像受信開始 (Port 50000)
         _videoReceiver = new UdpVideoReceiver(50000);
-        _videoReceiver.OnFrameReceived += (bmp) =>
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                CameraImage = bmp;
-            });
-        };
+        _videoReceiver.OnFrameReceived += (bmp) => Dispatcher.UIThread.Post(() => CameraImage = bmp);
         _videoReceiver.Start();
 
-        // 2. コマンド送受信用サーバー開始 (Port 55555)
         TcpServer = new TcpJsonClient(55555);
-        
-        // 受信したJSONを処理
         TcpServer.OnJsonReceived += (json) => 
         {
+            try { File.AppendAllText("/home/shikoku-pc/json_log.txt", $"[{DateTime.Now:HH:mm:ss}] {json}\n"); } catch { }
+
             try
             {
-                // 1. ログ保存
-                string logPath = "/home/shikoku-pc/json_log.txt";
-                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                string logLine = $"[{timestamp}] {json}{Environment.NewLine}";
-                File.AppendAllText(logPath, logLine);
-
-                // 2. 検出データのパースと保持
-                // type: "data" の場合のみ処理する
                 if (json.Contains("\"type\": \"data\"") || json.Contains("\"type\":\"data\""))
                 {
-                    var response = JsonSerializer.Deserialize<DetectionResponse>(json);
-                    if (response != null && response.Detections != null)
+                    var response = JsonSerializer.Deserialize<type_data_json>(json, _jsonOptions);
+                    
+                    if (response != null && response.detections != null)
                     {
-                        LatestDetections = response.Detections;
-                        Console.WriteLine($"Detection Data Received: {LatestDetections.Count} items");
+                        LatestDetections = response.detections;
+                        Console.WriteLine($"[JSON] Updated: {LatestDetections.Count} items");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"JSON Process Error: {ex.Message}");
+                Console.WriteLine($"[JSON Error] {ex.Message}");
             }
         };
 
         TcpServer.Start();
-
-        // 初期画面は時刻設定から
-        _currentViewModel = new TimeSettingViewModel(() =>
-        {
-            Navigate(new HomeViewModel(this));
-        });
+        
+        _currentViewModel = new TimeSettingViewModel(() => Navigate(new HomeViewModel(this)));
     }
 
-    public void Navigate(ViewModelBase viewModel)
-    {
-        CurrentViewModel = viewModel;
-    }
+    public void Navigate(ViewModelBase viewModel) => CurrentViewModel = viewModel;
 
     public void ShutdownApplication()
     {
         _videoReceiver.Stop();
-        TcpServer.Stop(); // サーバーも停止
-        
+        TcpServer.Stop();
         if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.Shutdown();

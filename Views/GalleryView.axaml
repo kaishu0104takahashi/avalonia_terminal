@@ -30,7 +30,7 @@
             <Setter Property="Background" Value="#3E3E42"/>
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
-        <Style Selector="Border.CorrectionItem[Tag=True]">
+        <Style Selector="Border.CorrectionItem.CorrectionMode">
             <Setter Property="Background" Value="#303050"/>
             <Setter Property="BorderBrush" Value="#FFA500"/>
             <Setter Property="BorderThickness" Value="2"/>
@@ -243,29 +243,30 @@
                                             <TextBlock Text="修正したい抵抗をタップしてください" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
                                         </Border>
 
-                                        <ScrollViewer Grid.Row="2">
+                                        <ScrollViewer Grid.Row="2"
+                                                      PointerPressed="OnScrollPointerPressed" 
+                                                      PointerMoved="OnScrollPointerMoved" 
+                                                      PointerReleased="OnScrollPointerReleased">
                                             <ItemsControl ItemsSource="{Binding DetectionItems}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Button Command="{Binding $parent[UserControl].DataContext.DetailViewModel.ItemEditCommand}" 
-                                                                CommandParameter="{Binding}"
-                                                                Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,0,10"
-                                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                                                            <Border Classes="CorrectionItem" CornerRadius="5" Padding="8" Tag="{Binding IsCorrectionMode}">
-                                                                <Grid ColumnDefinitions="220, *">
-                                                                    <Border Grid.Column="0" Width="200" Height="200" Background="Black" CornerRadius="4" ClipToBounds="True">
-                                                                        <Image Source="{Binding CroppedImage}" Stretch="Uniform"/>
+                                                        <Border Classes="CorrectionItem" 
+                                                                Classes.CorrectionMode="{Binding IsCorrectionMode}"
+                                                                CornerRadius="5" Padding="8" Margin="0,0,0,10"
+                                                                Tag="{Binding}">
+                                                            <Grid ColumnDefinitions="220, *">
+                                                                <Border Grid.Column="0" Width="200" Height="200" Background="Black" CornerRadius="4" ClipToBounds="True">
+                                                                    <Image Source="{Binding CroppedImage}" Stretch="Uniform"/>
+                                                                </Border>
+                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
+                                                                    <TextBlock Text="{Binding Label}" Foreground="#007ACC" FontWeight="Bold" FontSize="26"/>
+                                                                    <TextBlock Text="{Binding FormattedValue}" Foreground="White" FontSize="34" FontWeight="Bold"/>
+                                                                    <Border Background="#E65100" CornerRadius="4" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="10,5" IsVisible="{Binding IsCorrectionMode}">
+                                                                        <TextBlock Text="✎ 修正" Foreground="White" FontWeight="Bold"/>
                                                                     </Border>
-                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
-                                                                        <TextBlock Text="{Binding Label}" Foreground="#007ACC" FontWeight="Bold" FontSize="26"/>
-                                                                        <TextBlock Text="{Binding FormattedValue}" Foreground="White" FontSize="34" FontWeight="Bold"/>
-                                                                        <Border Background="#E65100" CornerRadius="4" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="10,5" IsVisible="{Binding IsCorrectionMode}">
-                                                                            <TextBlock Text="✎ 修正" Foreground="White" FontWeight="Bold"/>
-                                                                        </Border>
-                                                                    </StackPanel>
-                                                                </Grid>
-                                                            </Border>
-                                                        </Button>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
@@ -276,43 +277,128 @@
                         </Grid>
 
                         <Grid IsVisible="{Binding IsShowKeypad}" Background="#CC000000">
-                            <Border Background="White" Width="500" Height="650" CornerRadius="16" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
-                                <Grid RowDefinitions="Auto, *, Auto">
-                                    <TextBlock Grid.Row="0" Text="数値を入力 (Ω)" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-                                    
-                                    <Grid Grid.Row="1" RowDefinitions="Auto, *">
-                                        <Border Grid.Row="0" BorderBrush="#CCC" BorderThickness="1" CornerRadius="5" Margin="0,0,0,20" Padding="10">
-                                            <TextBlock Text="{Binding EditInputValue}" FontSize="40" HorizontalAlignment="Right"/>
-                                        </Border>
+                            <Grid ColumnDefinitions="Auto, 30, Auto" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                
+                                <Border Grid.Column="0" Background="White" CornerRadius="16" Padding="15" Width="380">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="カラーコード早見表" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                            
+                                            <Grid ColumnDefinitions="60, 40, *" Margin="0,0,0,5">
+                                                <TextBlock Grid.Column="0" Text="色" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="値" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="乗数 (接頭辞)" FontWeight="Bold" HorizontalAlignment="Left" Margin="10,0,0,0"/>
+                                            </Grid>
+
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Black" Height="35" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"/>
+                                                <TextBlock Grid.Column="1" Text="0" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x1" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="#A52A2A" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="1" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x10" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Red" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="2" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x100" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Orange" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="3" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x1 k (キロ)" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#E65100" FontWeight="Bold"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Yellow" Height="35" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"/>
+                                                <TextBlock Grid.Column="1" Text="4" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x10 k" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#E65100" FontWeight="Bold"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Green" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="5" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x100 k" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#E65100" FontWeight="Bold"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Blue" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="6" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x1 M (メガ)" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#007ACC" FontWeight="Bold"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Purple" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="7" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x10 M" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#007ACC" FontWeight="Bold"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Gray" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="8" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="White" Height="35" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"/>
+                                                <TextBlock Grid.Column="1" Text="9" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                            
+                                            <Separator Background="#DDD" Height="2" Margin="0,5"/>
+                                            
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Gold" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="-" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x0.1 / ±5%" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="60, 40, *">
+                                                <Border Grid.Column="0" Background="Silver" Height="35" CornerRadius="4"/>
+                                                <TextBlock Grid.Column="1" Text="-" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="2" Text="x0.01 / ±10%" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <Border Grid.Column="2" Background="White" Width="550" Height="850" CornerRadius="16" Padding="30">
+                                    <Grid RowDefinitions="Auto, Auto, *, Auto">
+                                        <TextBlock Grid.Row="0" Text="数値を入力 (Ω)" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                                         
-                                        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" RowDefinitions="*,*,*,*">
-                                            <Button Grid.Row="0" Grid.Column="0" Content="7" Command="{Binding KeypadAppendCommand}" CommandParameter="7" Classes="Key"/>
-                                            <Button Grid.Row="0" Grid.Column="1" Content="8" Command="{Binding KeypadAppendCommand}" CommandParameter="8" Classes="Key"/>
-                                            <Button Grid.Row="0" Grid.Column="2" Content="9" Command="{Binding KeypadAppendCommand}" CommandParameter="9" Classes="Key"/>
-                                            <Button Grid.Row="0" Grid.Column="3" Content="k" Command="{Binding KeypadAppendCommand}" CommandParameter="k" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
+                                        <Border Grid.Row="1" Width="480" Height="280" Margin="0,0,0,20" BorderBrush="#DDD" BorderThickness="1" Background="Black" CornerRadius="4" ClipToBounds="True">
+                                            <Image Source="{Binding EditTargetImage}" Stretch="Uniform"/>
+                                        </Border>
+
+                                        <Grid Grid.Row="2" RowDefinitions="Auto, *">
+                                            <Border Grid.Row="0" BorderBrush="#CCC" BorderThickness="1" CornerRadius="5" Margin="0,0,0,20" Padding="10" Height="70">
+                                                <TextBlock Text="{Binding EditInputValue}" FontSize="40" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            </Border>
                                             
-                                            <Button Grid.Row="1" Grid.Column="0" Content="4" Command="{Binding KeypadAppendCommand}" CommandParameter="4" Classes="Key"/>
-                                            <Button Grid.Row="1" Grid.Column="1" Content="5" Command="{Binding KeypadAppendCommand}" CommandParameter="5" Classes="Key"/>
-                                            <Button Grid.Row="1" Grid.Column="2" Content="6" Command="{Binding KeypadAppendCommand}" CommandParameter="6" Classes="Key"/>
-                                            <Button Grid.Row="1" Grid.Column="3" Content="M" Command="{Binding KeypadAppendCommand}" CommandParameter="M" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
-                                            
-                                            <Button Grid.Row="2" Grid.Column="0" Content="1" Command="{Binding KeypadAppendCommand}" CommandParameter="1" Classes="Key"/>
-                                            <Button Grid.Row="2" Grid.Column="1" Content="2" Command="{Binding KeypadAppendCommand}" CommandParameter="2" Classes="Key"/>
-                                            <Button Grid.Row="2" Grid.Column="2" Content="3" Command="{Binding KeypadAppendCommand}" CommandParameter="3" Classes="Key"/>
-                                            <Button Grid.Row="2" Grid.Column="3" Content="." Command="{Binding KeypadAppendCommand}" CommandParameter="." Classes="Key"/>
-                                            
-                                            <Button Grid.Row="3" Grid.Column="0" Content="0" Command="{Binding KeypadAppendCommand}" CommandParameter="0" Classes="Key"/>
-                                            <Button Grid.Row="3" Grid.Column="1" Content="BS" Command="{Binding KeypadBackspaceCommand}" Classes="Key" Background="#FFDDDD" FontSize="20"/>
-                                            <Button Grid.Row="3" Grid.Column="2" Content="AC" Command="{Binding KeypadClearCommand}" Classes="Key" Background="#FFCCCC" FontSize="20"/>
+                                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" RowDefinitions="*,*,*,*">
+                                                <Button Grid.Row="0" Grid.Column="0" Content="7" Command="{Binding KeypadAppendCommand}" CommandParameter="7" Classes="Key"/>
+                                                <Button Grid.Row="0" Grid.Column="1" Content="8" Command="{Binding KeypadAppendCommand}" CommandParameter="8" Classes="Key"/>
+                                                <Button Grid.Row="0" Grid.Column="2" Content="9" Command="{Binding KeypadAppendCommand}" CommandParameter="9" Classes="Key"/>
+                                                <Button Grid.Row="0" Grid.Column="3" Content="k" Command="{Binding KeypadAppendCommand}" CommandParameter="k" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
+                                                
+                                                <Button Grid.Row="1" Grid.Column="0" Content="4" Command="{Binding KeypadAppendCommand}" CommandParameter="4" Classes="Key"/>
+                                                <Button Grid.Row="1" Grid.Column="1" Content="5" Command="{Binding KeypadAppendCommand}" CommandParameter="5" Classes="Key"/>
+                                                <Button Grid.Row="1" Grid.Column="2" Content="6" Command="{Binding KeypadAppendCommand}" CommandParameter="6" Classes="Key"/>
+                                                <Button Grid.Row="1" Grid.Column="3" Content="M" Command="{Binding KeypadAppendCommand}" CommandParameter="M" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
+                                                
+                                                <Button Grid.Row="2" Grid.Column="0" Content="1" Command="{Binding KeypadAppendCommand}" CommandParameter="1" Classes="Key"/>
+                                                <Button Grid.Row="2" Grid.Column="1" Content="2" Command="{Binding KeypadAppendCommand}" CommandParameter="2" Classes="Key"/>
+                                                <Button Grid.Row="2" Grid.Column="2" Content="3" Command="{Binding KeypadAppendCommand}" CommandParameter="3" Classes="Key"/>
+                                                <Button Grid.Row="2" Grid.Column="3" Content="." Command="{Binding KeypadAppendCommand}" CommandParameter="." Classes="Key"/>
+                                                
+                                                <Button Grid.Row="3" Grid.Column="0" Content="0" Command="{Binding KeypadAppendCommand}" CommandParameter="0" Classes="Key"/>
+                                                <Button Grid.Row="3" Grid.Column="1" Content="BS" Command="{Binding KeypadBackspaceCommand}" Classes="Key" Background="#FFDDDD" FontSize="20"/>
+                                                <Button Grid.Row="3" Grid.Column="2" Content="AC" Command="{Binding KeypadClearCommand}" Classes="Key" Background="#FFCCCC" FontSize="20"/>
+                                            </Grid>
+                                        </Grid>
+
+                                        <Grid Grid.Row="3" ColumnDefinitions="Auto, 30, Auto" HorizontalAlignment="Center" Margin="0,30,0,0">
+                                            <Button Grid.Column="0" Content="決定" Command="{Binding KeypadEnterCommand}" Background="#007ACC" Foreground="White" Width="180" Height="70" FontSize="28" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
+                                            <Button Grid.Column="2" Content="キャンセル" Command="{Binding KeypadCancelCommand}" Background="#AAAAAA" Foreground="Black" Width="180" Height="70" FontSize="28" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
                                         </Grid>
                                     </Grid>
-
-                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20" Margin="0,20,0,0">
-                                        <Button Content="決定" Command="{Binding KeypadEnterCommand}" Background="#007ACC" Foreground="White" Width="140" Height="60" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
-                                        <Button Content="キャンセル" Command="{Binding KeypadCancelCommand}" Background="#AAAAAA" Foreground="Black" Width="140" Height="60" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
+                                </Border>
+                            </Grid>
                         </Grid>
                     </Grid>
                 </DataTemplate>

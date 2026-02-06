@@ -9,7 +9,9 @@ namespace avalonia_terminal.Models;
 public class GalleryDetectionItem : INotifyPropertyChanged
 {
     public int Id { get; set; }
-    public string Label => $"R{Id}";
+    
+    // ★修正: 表示用ラベルを detection_id + 1 にする ("R1" 始まりにする)
+    public string Label => $"R{Id + 1}";
     
     public string RawValue { get; set; }
     
@@ -42,7 +44,6 @@ public class GalleryDetectionItem : INotifyPropertyChanged
     private string FormatSiPrefix(string input)
     {
         if (string.IsNullOrEmpty(input)) return "不明";
-
         if (ParseWithSuffix(input, out double val))
         {
             if (val >= 1_000_000) return $"{val / 1_000_000:0.##}MΩ";
@@ -60,7 +61,6 @@ public class GalleryDetectionItem : INotifyPropertyChanged
 
         string normalized = input.Trim().ToUpperInvariant().Replace("Ω", "");
         double multiplier = 1.0;
-
         if (normalized.EndsWith("K"))
         {
             multiplier = 1_000.0;

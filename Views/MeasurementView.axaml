@@ -52,7 +52,10 @@
                         <Separator Background="#3E3E42" Height="2"/>
                     </StackPanel>
 
-                    <ScrollViewer Grid.Row="1">
+                    <ScrollViewer Grid.Row="1" x:Name="ResultScroll"
+                                  PointerPressed="OnScrollPointerPressed" 
+                                  PointerMoved="OnScrollPointerMoved" 
+                                  PointerReleased="OnScrollPointerReleased">
                         <ItemsControl ItemsSource="{Binding DetectionItems}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>

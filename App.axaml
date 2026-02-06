@@ -26,7 +26,8 @@
         <Style Selector="Label">
             <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
         </Style>
-        <Style Selector="AccessText"> <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
+        <Style Selector="AccessText">
+            <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>
         </Style>
         <Style Selector="ContentPresenter">
             <Setter Property="FontFamily" Value="MS Gothic, IPAGothic, Noto Sans CJK JP, sans-serif"/>

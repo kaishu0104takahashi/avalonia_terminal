@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic; // 追加
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -61,10 +62,10 @@ public class SimpleInspectViewModel : ViewModelBase
         {
             if (Main.CameraImage != null)
             {
-                // 以前の検出データをクリア
+                // 1. 以前の検出データをクリア
                 Main.LatestDetections.Clear();
 
-                // 1. 画質変更コマンド送信
+                // 2. 画質変更コマンド送信 (推論開始)
                 await Main.TcpServer.SendJsonAsync(new 
                 { 
                     type = "cmd", 
@@ -73,13 +74,22 @@ public class SimpleInspectViewModel : ViewModelBase
                 });
 
                 StatusMessage = "高画質撮影中...";
-                await Task.Delay(500);
+                
+                // 3. データ受信待ち (ポーリング)
+                // タイムアウトを 3秒 -> 5秒 に延長
+                for (int i = 0; i < 50; i++)
+                {
+                    if (Main.LatestDetections.Count > 0) break;
+                    await Task.Delay(100);
+                }
 
-                // 3. 撮影
+                // 4. 撮影確定
                 Main.IsCameraPaused = true;
                 CapturedImage = Main.CameraImage;
                 IsCaptured = true;
-                StatusMessage = "この画像で保存しますか？";
+                
+                int count = Main.LatestDetections.Count;
+                StatusMessage = $"検出: {count}個\nこの画像で保存しますか？";
             }
         });
 
@@ -123,12 +133,13 @@ public class SimpleInspectViewModel : ViewModelBase
                 };
                 _dbService.InsertInspection(record);
 
-                // 2. 【追加】検出データがあれば、専用テーブルを作成して保存
-                if (Main.LatestDetections != null && Main.LatestDetections.Count > 0)
-                {
-                    _dbService.CreateDetectionTableAndInsert(timestamp, Main.LatestDetections);
-                    Console.WriteLine($"Saved {Main.LatestDetections.Count} detections to table '{timestamp}'");
-                }
+                // 2. 詳細テーブルの作成と保存
+                // ★修正: 検出数が0でもテーブルを作成するように変更
+                // (nullなら空リストを渡す)
+                var detectionsToSave = Main.LatestDetections ?? new List<detection_data>();
+                
+                _dbService.CreateDetectionTableAndInsert(timestamp, detectionsToSave);
+                Console.WriteLine($"Saved {detectionsToSave.Count} detections to table '{timestamp}'");
 
                 // MJPEGに戻してホームへ
                 await Main.TcpServer.SendJsonAsync(new 
@@ -137,7 +148,6 @@ public class SimpleInspectViewModel : ViewModelBase
                     command = "change_format", 
                     args = new { format = "MJPEG" } 
                 });
-
                 Main.IsCameraPaused = false;
                 Main.Navigate(new HomeViewModel(Main));
             }

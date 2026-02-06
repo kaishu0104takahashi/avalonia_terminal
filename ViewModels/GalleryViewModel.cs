@@ -66,7 +66,7 @@ public class GalleryViewModel : ViewModelBase
         get => _isDeleteMode;
         set 
         { 
-            _isDeleteMode = value; 
+            _isDeleteMode = value;
             RaisePropertyChanged(); 
             if(value) IsRenameMode = false;
             UpdateItemsMode();
@@ -110,7 +110,7 @@ public class GalleryViewModel : ViewModelBase
         get => _isUpperCase;
         set 
         { 
-            _isUpperCase = value; 
+            _isUpperCase = value;
             RaisePropertyChanged(); 
             RaisePropertyChanged(nameof(CapsButtonText));
             RaisePropertyChanged(nameof(CapsButtonColor));
@@ -152,7 +152,6 @@ public class GalleryViewModel : ViewModelBase
 
     public string DeleteButtonText => IsDeleteMode ? "実行" : "削除";
     public string RenameButtonText => IsRenameMode ? "キャンセル" : "名前変更";
-
     public string StatusMessage
     {
         get
@@ -209,7 +208,6 @@ public class GalleryViewModel : ViewModelBase
         BackToListCommand = new RelayCommand(ExecuteBackToList);
         
         ShowDetailCommand = new RelayCommand<InspectionRecord>(r => OpenDetail(r, startFromEnd: false));
-
         HeaderDeleteButtonCommand = new RelayCommand(() =>
         {
             if (!IsDeleteMode) IsDeleteMode = true;
@@ -226,7 +224,6 @@ public class GalleryViewModel : ViewModelBase
 
         ExecuteRenameCommand = new RelayCommand(PerformRename);
         CancelRenameCommand = new RelayCommand(() => { ShowRenameDialog = false; _targetItemForRename = null; });
-        
         ToggleCaseCommand = new RelayCommand(() => IsUpperCase = !IsUpperCase);
 
         KeyboardAppendCommand = new LocalRelayCommand<string>(key => 
@@ -348,7 +345,6 @@ public class GalleryViewModel : ViewModelBase
     private void PerformRename()
     {
         if (_targetItemForRename == null || string.IsNullOrWhiteSpace(RenameInput)) return;
-
         string oldName = _targetItemForRename.Record.SaveName;
         string newName = RenameInput;
         string oldPath = _targetItemForRename.Record.SaveAbsolutePath;
@@ -359,13 +355,25 @@ public class GalleryViewModel : ViewModelBase
 
         try
         {
-            if (Directory.Exists(newPath)) 
+            bool isCaseChangeOnly = oldName.Equals(newName, StringComparison.OrdinalIgnoreCase);
+            
+            if (!isCaseChangeOnly && Directory.Exists(newPath)) 
             { 
-                RenameErrorMessage = "既に同名のフォルダが存在します";
+                RenameErrorMessage = "既に同名のフォルダが存在します"; 
                 return; 
             }
 
-            Directory.Move(oldPath, newPath);
+            if (isCaseChangeOnly && Directory.Exists(newPath))
+            {
+                string tempPath = newPath + "_temp_" + Guid.NewGuid().ToString().Substring(0, 8);
+                Directory.Move(oldPath, tempPath);
+                Directory.Move(tempPath, newPath);
+            }
+            else
+            {
+                Directory.Move(oldPath, newPath);
+            }
+
             string[] files = Directory.GetFiles(newPath);
             foreach (var file in files)
             {
@@ -374,7 +382,10 @@ public class GalleryViewModel : ViewModelBase
                 {
                     string newFileName = fileName.Replace(oldName, newName);
                     string newFilePath = Path.Combine(newPath, newFileName);
-                    File.Move(file, newFilePath);
+                    if (file != newFilePath)
+                    {
+                        File.Move(file, newFilePath);
+                    }
                 }
             }
 
@@ -383,7 +394,11 @@ public class GalleryViewModel : ViewModelBase
             IsRenameMode = false;
             LoadData();
         }
-        catch (Exception ex) { Console.WriteLine($"Rename Error: {ex.Message}"); }
+        catch (Exception ex) 
+        { 
+            Console.WriteLine($"Rename Error: {ex.Message}");
+            RenameErrorMessage = $"エラー: {ex.Message}";
+        }
     }
 
     public void OpenDetail(InspectionRecord? record, bool startFromEnd)
@@ -572,14 +587,14 @@ public class GalleryDetailViewModel : ViewModelBase
         get => _isCorrectionMode;
         set 
         { 
-            _isCorrectionMode = value; 
+            _isCorrectionMode = value;
             RaisePropertyChanged(); 
             RaisePropertyChanged(nameof(CorrectionButtonText));
             UpdateItemsCorrectionState();
         }
     }
     public string CorrectionButtonText => IsCorrectionMode ? "修正終了" : "修正";
-
+    
     private bool _isShowKeypad = false;
     public bool IsShowKeypad
     {
@@ -592,6 +607,14 @@ public class GalleryDetailViewModel : ViewModelBase
     {
         get => _editInputValue;
         set { _editInputValue = value; RaisePropertyChanged(); }
+    }
+
+    // 【追加】修正対象の抵抗画像
+    private Bitmap? _editTargetImage;
+    public Bitmap? EditTargetImage
+    {
+        get => _editTargetImage;
+        set { _editTargetImage = value; RaisePropertyChanged(); }
     }
 
     private GalleryDetectionItem? _selectedEditItem;
@@ -614,15 +637,14 @@ public class GalleryDetailViewModel : ViewModelBase
         CloseDetailCommand = parent.BackToListCommand;
         
         ToggleCorrectionCommand = new RelayCommand(() => IsCorrectionMode = !IsCorrectionMode);
-        
         ItemEditCommand = new RelayCommand<GalleryDetectionItem>(item => 
         {
             if (!IsCorrectionMode || item == null) return;
             _selectedEditItem = item;
+            EditTargetImage = item.CroppedImage; // 画像をセット
             EditInputValue = item.RawValue;
             IsShowKeypad = true;
         });
-
         KeypadAppendCommand = new LocalRelayCommand<string>(key => EditInputValue += key);
         KeypadBackspaceCommand = new RelayCommand(() => 
         {
@@ -647,7 +669,7 @@ public class GalleryDetailViewModel : ViewModelBase
             {
                 try 
                 { 
-                    _images.Add(new Bitmap(path)); 
+                    _images.Add(new Bitmap(path));
                     _imagePaths.Add(path);
                 }
                 catch { }
@@ -707,25 +729,16 @@ public class GalleryDetailViewModel : ViewModelBase
         {
             item.IsCorrectionMode = IsCorrectionMode;
         }
-        // コレクション全体の更新を通知しないとViewのスタイルが反映されないことがあるため
-        // ここでは簡易的に、リストをリフレッシュする手もあるが、バインディングで解決する
     }
 
     private void SaveCorrection()
     {
         if (_selectedEditItem == null) return;
-
         try
         {
             var db = new DatabaseService();
-            // DB更新
             db.UpdateDetectionValue(Record.SaveName, _selectedEditItem.Id, EditInputValue);
-            
-            // リストのアイテムを更新 (再読み込みする方が確実だが、チラつき防止のため値だけ更新)
-            // コレクションを置き換えるか、プロパティ変更通知が必要
-            // ここでは簡易的にリスト再構築を行う
             LoadDetections();
-            
             IsShowKeypad = false;
         }
         catch (Exception ex)
@@ -768,20 +781,62 @@ public class GalleryDetailViewModel : ViewModelBase
                 {
                     if (det.YoloObb == null) continue;
 
-                    var center = new Point2f(det.YoloObb.CenterX, det.YoloObb.CenterY);
-                    var size = new Size2f(det.YoloObb.Width, det.YoloObb.Height);
-                    float angleDeg = det.YoloObb.RotationRad * 180f / (float)Math.PI;
-
+                    var obb = det.YoloObb;
+                    float angleDeg = obb.RotationRad * (180f / (float)Math.PI);
+                    
+                    var center = new Point2f(obb.CenterX, obb.CenterY);
+                    var size = new Size2f(obb.Width, obb.Height);
                     var rotatedRect = new RotatedRect(center, size, angleDeg);
-                    var rectSize = rotatedRect.Size;
-                    if (rectSize.Width <= 0 || rectSize.Height <= 0) continue;
 
+                    Point2f[] pts = rotatedRect.Points();
+                    Point2f tl = new Point2f(), tr = new Point2f(), br = new Point2f(), bl = new Point2f();
+
+                    float min_s = float.MaxValue;
+                    float max_s = float.MinValue;
+                    float min_diff = float.MaxValue;
+                    float max_diff = float.MinValue;
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float s = pts[i].X + pts[i].Y;
+                        float diff = pts[i].Y - pts[i].X;
+
+                        if (s < min_s) { min_s = s; tl = pts[i]; }
+                        if (s > max_s) { max_s = s; br = pts[i]; }
+                        if (diff < min_diff) { min_diff = diff; tr = pts[i]; }
+                        if (diff > max_diff) { max_diff = diff; bl = pts[i]; }
+                    }
+
+                    float widthA = (float)Math.Sqrt(Math.Pow(br.X - bl.X, 2) + Math.Pow(br.Y - bl.Y, 2));
+                    float widthB = (float)Math.Sqrt(Math.Pow(tr.X - tl.X, 2) + Math.Pow(tr.Y - tl.Y, 2));
+                    int maxWidth = (int)Math.Max(widthA, widthB);
+
+                    float heightA = (float)Math.Sqrt(Math.Pow(tr.X - br.X, 2) + Math.Pow(tr.Y - br.Y, 2));
+                    float heightB = (float)Math.Sqrt(Math.Pow(tl.X - bl.X, 2) + Math.Pow(tl.Y - bl.Y, 2));
+                    int maxHeight = (int)Math.Max(heightA, heightB);
+
+                    if (maxWidth <= 0 || maxHeight <= 0) continue;
+
+                    Point2f[] srcPts = { tl, tr, br, bl };
+                    Point2f[] dstPts = {
+                        new Point2f(0, 0),
+                        new Point2f(maxWidth - 1, 0),
+                        new Point2f(maxWidth - 1, maxHeight - 1),
+                        new Point2f(0, maxHeight - 1)
+                    };
+
+                    using var perspectiveM = Cv2.GetPerspectiveTransform(srcPts, dstPts);
                     using var cropped = new Mat();
-                    Cv2.GetRectSubPix(src, new OpenCvSharp.Size((int)rectSize.Width, (int)rectSize.Height), rotatedRect.Center, cropped);
+                    Cv2.WarpPerspective(src, cropped, perspectiveM, new OpenCvSharp.Size(maxWidth, maxHeight));
+
+                    if (cropped.Rows > cropped.Cols)
+                    {
+                        Cv2.Rotate(cropped, cropped, RotateFlags.Rotate90Clockwise);
+                    }
                     
                     var bmp = MatToBitmap(cropped);
                     var newItem = new GalleryDetectionItem(det.DetectionId, det.Value ?? "", bmp);
-                    newItem.IsCorrectionMode = IsCorrectionMode; // 現在のモードを反映
+                    newItem.IsCorrectionMode = IsCorrectionMode;
                     items.Add(newItem);
                 }
 

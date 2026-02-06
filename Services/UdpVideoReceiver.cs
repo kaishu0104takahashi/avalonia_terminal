@@ -35,7 +35,6 @@ public class UdpVideoReceiver
     
     // 画像を受信したときにViewModelへ通知するアクション
     public Action<Bitmap?>? OnFrameReceived;
-
     public bool IsPaused { get; set; } = false;
 
     public UdpVideoReceiver(int port)
@@ -60,7 +59,6 @@ public class UdpVideoReceiver
         _socket.ReceiveBufferSize = Constants.KERNEL_S_UDP_BUFFER_SIZE;
         
         byte[] receive_buffer = ArrayPool<byte>.Shared.Rent(4096);
-        
         try
         {
             EndPoint remote_endpoint = new IPEndPoint(IPAddress.Any, 0);
@@ -68,7 +66,6 @@ public class UdpVideoReceiver
             {
                 // 非同期でデータ受信
                 var result = await _socket.ReceiveFromAsync(new Memory<byte>(receive_buffer), SocketFlags.None, remote_endpoint);
-                
                 if (IsPaused) continue;
 
                 int bytes_read = result.ReceivedBytes;
@@ -79,15 +76,14 @@ public class UdpVideoReceiver
                     continue;
                 }
 
-                // ヘッダーの解析 (Little Endianと仮定)
+                // ヘッダーの解析 (Big Endianに変更)
                 ReadOnlySpan<byte> packet_span = receive_buffer.AsSpan(0, bytes_read);
-                
                 // Offset 4: packet_index (uint16)
-                ushort packet_index = BinaryPrimitives.ReadUInt16LittleEndian(packet_span.Slice(4));
+                ushort packet_index = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(4));
                 // Offset 6: total_packet (uint16)
-                ushort total_packet = BinaryPrimitives.ReadUInt16LittleEndian(packet_span.Slice(6));
+                ushort total_packet = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(6));
                 // Offset 8: data_size (uint16)
-                ushort data_size = BinaryPrimitives.ReadUInt16LittleEndian(packet_span.Slice(8));
+                ushort data_size = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(8));
 
                 // データ整合性チェック: 受信サイズがヘッダー+データサイズ以上あるか
                 if (bytes_read < Constants.HEADER_SIZE + data_size)
@@ -104,7 +100,8 @@ public class UdpVideoReceiver
                 // バッファオーバーフロー対策
                 if (_current_payload_length + data_size > _reassembly_buffer.Length)
                 {
-                    _current_payload_length = 0; // 破損フレームとして破棄
+                    _current_payload_length = 0;
+                    // 破損フレームとして破棄
                     continue;
                 }
 
