@@ -45,11 +45,16 @@ namespace avalonia_terminal.ViewModels
             set { _hasResult = value; RaisePropertyChanged(); }
         }
 
+        // キャンセル用フラグ
+        private bool _isCancelled;
+
         public ObservableCollection<GalleryDetectionItem> DetectionItems { get; } = new();
 
         public ICommand ExecuteMeasurementCommand { get; }
         public ICommand RetryCommand { get; }
         public ICommand BackCommand { get; }
+        // ★追加: 中断コマンド
+        public ICommand CancelMeasurementCommand { get; }
 
         public MeasurementViewModel(MainViewModel mainViewModel)
         {
@@ -57,6 +62,10 @@ namespace avalonia_terminal.ViewModels
             _mainViewModel.PropertyChanged += MainViewModel_PropertyChanged;
 
             ExecuteMeasurementCommand = new RelayCommand<object>(async _ => await ExecuteMeasurement());
+            
+            // ★追加: 中断ボタンの処理
+            CancelMeasurementCommand = new RelayCommand(() => _isCancelled = true);
+
             RetryCommand = new RelayCommand(() =>
             {
                 CapturedImage = null;
@@ -89,15 +98,32 @@ namespace avalonia_terminal.ViewModels
         private async Task ExecuteMeasurement()
         {
             if (IsMeasuring) return;
+            
+            if (!_mainViewModel.IsConnected)
+            {
+                ResultText = "通信未接続";
+                return;
+            }
+
             IsMeasuring = true;
             HasResult = false;
+            _isCancelled = false; // フラグ初期化
             DetectionItems.Clear();
             _mainViewModel.LatestDetections.Clear();
 
-            // ★重要: コマンド送信前の時刻を記録
             var startTime = DateTime.Now;
 
-            // 推論開始トリガー (YUV422)
+            // 1. リセット (MJPEG)
+            await _mainViewModel.TcpServer.SendJsonAsync(new 
+            { 
+                type = "cmd", 
+                command = "change_format", 
+                args = new { format = "MJPEG" } 
+            });
+            
+            await Task.Delay(200);
+
+            // 2. 推論開始 (YUV422)
             await _mainViewModel.TcpServer.SendJsonAsync(new 
             { 
                 type = "cmd", 
@@ -107,11 +133,17 @@ namespace avalonia_terminal.ViewModels
 
             Console.WriteLine("Waiting for detection result...");
 
-            // ★修正: 新しいデータが来るまで待機 (最大20秒)
-            // 検出数が0の場合でも、受信時刻が更新されれば「受信した」とみなして進む
+            // 3. データ受信待ち (最大20秒)
             bool received = false;
-            for (int i = 0; i < 200; i++) // 200 * 100ms = 20秒
+            for (int i = 0; i < 200; i++)
             {
+                // ★追加: キャンセルチェック
+                if (_isCancelled)
+                {
+                    await CancelProcess();
+                    return;
+                }
+
                 if (_mainViewModel.LastDataReceivedTime > startTime)
                 {
                     Console.WriteLine($"Data received! Count: {_mainViewModel.LatestDetections.Count}");
@@ -126,11 +158,20 @@ namespace avalonia_terminal.ViewModels
                 Console.WriteLine("Timeout waiting for data.");
                 ResultText = "タイムアウト: データ受信なし";
                 IsMeasuring = false;
+                
+                // 念のためMJPEGに戻す
+                await _mainViewModel.TcpServer.SendJsonAsync(new { type = "cmd", command = "change_format", args = new { format = "MJPEG" } });
                 return;
             }
 
-            // 受信完了後、少しだけ待って画像と同期させる
             await Task.Delay(500);
+
+            // ★追加: 処理直前にもキャンセルチェック
+            if (_isCancelled)
+            {
+                await CancelProcess();
+                return;
+            }
 
             if (_mainViewModel.CameraImage != null)
             {
@@ -144,6 +185,21 @@ namespace avalonia_terminal.ViewModels
 
             IsMeasuring = false;
             HasResult = true;
+        }
+
+        // 中断処理を共通化
+        private async Task CancelProcess()
+        {
+            Console.WriteLine("Measurement Cancelled.");
+            ResultText = "測定を中断しました";
+            IsMeasuring = false;
+            // カメラを低画質に戻す
+            await _mainViewModel.TcpServer.SendJsonAsync(new 
+            { 
+                type = "cmd", 
+                command = "change_format", 
+                args = new { format = "MJPEG" } 
+            });
         }
 
         private async Task ProcessDetectionsAsync()

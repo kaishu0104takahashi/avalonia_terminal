@@ -25,8 +25,29 @@ public class SimpleInspectViewModel : ViewModelBase
     public bool IsCaptured
     {
         get => _isCaptured;
-        set { _isCaptured = value; RaisePropertyChanged(); }
+        set 
+        { 
+            _isCaptured = value; 
+            RaisePropertyChanged();
+            RaisePropertyChanged(nameof(IsCaptureButtonVisible));
+        }
     }
+
+    // ★追加: 撮影処理中かどうか
+    private bool _isCapturing;
+    public bool IsCapturing
+    {
+        get => _isCapturing;
+        set 
+        { 
+            _isCapturing = value; 
+            RaisePropertyChanged();
+            RaisePropertyChanged(nameof(IsCaptureButtonVisible));
+        }
+    }
+
+    // ★追加: ボタンの表示判定 (撮影済みでなく、かつ処理中でもないとき表示)
+    public bool IsCaptureButtonVisible => !IsCaptured && !IsCapturing;
 
     private string _statusMessage = "検査対象をセットして\n撮影ボタンを押してください";
     public string StatusMessage
@@ -62,10 +83,13 @@ public class SimpleInspectViewModel : ViewModelBase
         {
             if (Main.CameraImage != null)
             {
+                // ★追加: 処理開始フラグOn (ボタン非表示)
+                IsCapturing = true;
+
                 Main.LatestDetections.Clear();
-                
-                // ★重要: 送信前の時刻を記録
                 var startTime = DateTime.Now;
+
+                StatusMessage = "高画質撮影中...";
 
                 // 推論開始
                 await Main.TcpServer.SendJsonAsync(new 
@@ -75,9 +99,7 @@ public class SimpleInspectViewModel : ViewModelBase
                     args = new { format = "YUV422" } 
                 });
 
-                StatusMessage = "高画質撮影中...";
-                
-                // ★修正: 新しいデータが来るまで待機 (最大20秒)
+                // データ受信待ち (最大20秒)
                 bool received = false;
                 for (int i = 0; i < 200; i++)
                 {
@@ -92,15 +114,16 @@ public class SimpleInspectViewModel : ViewModelBase
                 if (!received)
                 {
                     StatusMessage = "エラー: データ受信タイムアウト";
+                    IsCapturing = false; // エラー時はボタン再表示
                     return;
                 }
 
-                // 4. 撮影確定
+                // 撮影確定
                 Main.IsCameraPaused = true;
                 CapturedImage = Main.CameraImage;
-                IsCaptured = true;
+                IsCaptured = true; 
+                IsCapturing = false; // 処理完了 (IsCapturedがTrueなのでボタンは非表示のまま)
                 
-                // ★修正: 最新の検出数 (0個でも) を表示
                 int count = Main.LatestDetections?.Count ?? 0;
                 StatusMessage = $"検出: {count}個\nこの画像で保存しますか？";
             }
@@ -110,6 +133,7 @@ public class SimpleInspectViewModel : ViewModelBase
         {
             CapturedImage = null;
             IsCaptured = false;
+            IsCapturing = false;
             Main.IsCameraPaused = false;
             StatusMessage = "検査対象をセットして\n撮影ボタンを押してください";
         });

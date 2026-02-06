@@ -19,8 +19,17 @@ public class MainViewModel : ViewModelBase
     public ViewModelBase CurrentViewModel
     {
         get => _currentViewModel;
-        set { _currentViewModel = value; RaisePropertyChanged(); }
+        set 
+        { 
+            _currentViewModel = value; 
+            RaisePropertyChanged();
+            // ★追加: 画面が変わるたびにホーム画面かどうか判定して通知
+            RaisePropertyChanged(nameof(IsHomeView));
+        }
     }
+
+    // ★追加: 現在のViewModelがHomeViewModelならTrue
+    public bool IsHomeView => CurrentViewModel is HomeViewModel;
 
     private bool _isFullScreen = true;
     public bool IsFullScreen

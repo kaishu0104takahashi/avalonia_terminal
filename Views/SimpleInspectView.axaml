@@ -85,7 +85,7 @@
 
                 <StackPanel Grid.Row="1" Spacing="20" VerticalAlignment="Center">
                     
-                    <Button Command="{Binding CaptureCommand}" IsVisible="{Binding !IsCaptured}"
+                    <Button Command="{Binding CaptureCommand}" IsVisible="{Binding IsCaptureButtonVisible}"
                             Content="撮影" Classes="BlueBtn"
                             HorizontalAlignment="Stretch" Height="100" FontSize="32" FontWeight="Bold"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
