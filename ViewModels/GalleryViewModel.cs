@@ -24,7 +24,7 @@ public class ResistorColor
     public string TextColor { get; set; } = "White";
     public int Digit { get; set; }      
     public double Multiplier { get; set; } 
-    public string Tolerance { get; set; } = ""; 
+    public string Tolerance { get; set; } = "";
 }
 
 public enum GalleryViewMode {
@@ -219,6 +219,7 @@ public class GalleryViewModel : ViewModelBase
         BackToListCommand = new RelayCommand(ExecuteBackToList);
         
         ShowDetailCommand = new RelayCommand<InspectionRecord>(r => OpenDetail(r, startFromEnd: false));
+
         HeaderDeleteButtonCommand = new RelayCommand(() =>
         {
             if (!IsDeleteMode) IsDeleteMode = true;
@@ -228,6 +229,7 @@ public class GalleryViewModel : ViewModelBase
                 else QuitModes();
             }
         });
+
         HeaderRenameButtonCommand = new RelayCommand(() => { IsRenameMode = !IsRenameMode; });
 
         ExecuteDeleteConfirmCommand = new RelayCommand(PerformDeletion);
@@ -356,6 +358,7 @@ public class GalleryViewModel : ViewModelBase
     private void PerformRename()
     {
         if (_targetItemForRename == null || string.IsNullOrWhiteSpace(RenameInput)) return;
+
         string oldName = _targetItemForRename.Record.SaveName;
         string newName = RenameInput;
         string oldPath = _targetItemForRename.Record.SaveAbsolutePath;
@@ -367,10 +370,10 @@ public class GalleryViewModel : ViewModelBase
         try
         {
             bool isCaseChangeOnly = oldName.Equals(newName, StringComparison.OrdinalIgnoreCase);
-            
+
             if (!isCaseChangeOnly && Directory.Exists(newPath)) 
             { 
-                RenameErrorMessage = "既に同名のフォルダが存在します"; 
+                RenameErrorMessage = "既に同名のフォルダが存在します";
                 return; 
             }
 
@@ -626,7 +629,7 @@ public class GalleryDetailViewModel : ViewModelBase
         set { _editTargetImage = value; RaisePropertyChanged(); }
     }
 
-    public List<ResistorColor> ColorButtons { get; } = new List<ResistorColor>
+    public List<ResistorColor> StandardColors { get; } = new List<ResistorColor>
     {
         new ResistorColor { Name="黒", ColorCode="Black", TextColor="White", Digit=0, Multiplier=1 },
         new ResistorColor { Name="茶", ColorCode="#A52A2A", TextColor="White", Digit=1, Multiplier=10 },
@@ -637,7 +640,11 @@ public class GalleryDetailViewModel : ViewModelBase
         new ResistorColor { Name="青", ColorCode="Blue", TextColor="White", Digit=6, Multiplier=1000000 },
         new ResistorColor { Name="紫", ColorCode="Purple", TextColor="White", Digit=7, Multiplier=10000000 },
         new ResistorColor { Name="灰", ColorCode="Gray", TextColor="Black", Digit=8, Multiplier=0 },
-        new ResistorColor { Name="白", ColorCode="White", TextColor="Black", Digit=9, Multiplier=0 },
+        new ResistorColor { Name="白", ColorCode="White", TextColor="Black", Digit=9, Multiplier=0 }
+    };
+
+    public List<ResistorColor> SpecialColors { get; } = new List<ResistorColor>
+    {
         new ResistorColor { Name="金", ColorCode="Gold", TextColor="Black", Multiplier=0.1, Tolerance="±5%" },
         new ResistorColor { Name="銀", ColorCode="Silver", TextColor="Black", Multiplier=0.01, Tolerance="±10%" }
     };
@@ -664,13 +671,15 @@ public class GalleryDetailViewModel : ViewModelBase
         CloseDetailCommand = parent.BackToListCommand;
         
         ToggleCorrectionCommand = new RelayCommand(() => IsCorrectionMode = !IsCorrectionMode);
-        
         ItemEditCommand = new RelayCommand<GalleryDetectionItem>(item => 
         {
             if (!IsCorrectionMode || item == null) return;
             _selectedEditItem = item;
             EditTargetImage = item.CroppedImage;
-            EditInputValue = item.RawValue;
+            
+            // ★変更: 初期表示時もフォーマット(切り捨て)を適用
+            EditInputValue = FormatDecimal(item.RawValue);
+            
             CurrentBands.Clear(); 
             IsShowKeypad = true;
         });
@@ -683,13 +692,11 @@ public class GalleryDetailViewModel : ViewModelBase
             CurrentBands.Add(color);
             CalculateValueFromBands();
         });
-
         ClearColorsCommand = new RelayCommand(() => 
         {
             CurrentBands.Clear();
             EditInputValue = "";
         });
-
         BackspaceColorCommand = new RelayCommand(() => 
         {
             if (CurrentBands.Count > 0)
@@ -698,7 +705,6 @@ public class GalleryDetailViewModel : ViewModelBase
                 CalculateValueFromBands();
             }
         });
-
         KeypadCancelCommand = new RelayCommand(() => IsShowKeypad = false);
         KeypadEnterCommand = new RelayCommand(SaveCorrection);
 
@@ -764,6 +770,22 @@ public class GalleryDetailViewModel : ViewModelBase
         });
     }
 
+    // ★追加: 数値を文字列化する際に小数点第2位以下を切り捨てるヘルパー
+    private string FormatDecimal(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return "";
+        
+        // オーム単位記号や接尾辞があれば一旦無視して数値部分だけ見るのは難しいので、
+        // 単純な数値文字列であることを前提にパース
+        if (double.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out double val))
+        {
+            // 100倍してFloorして100で割る = 小数第2位まで残して切り捨て
+            double truncated = Math.Floor(val * 100.0) / 100.0;
+            return truncated.ToString("0.##"); // 不要な0は削除
+        }
+        return input;
+    }
+
     private void CalculateValueFromBands()
     {
         if (CurrentBands.Count == 0)
@@ -774,7 +796,7 @@ public class GalleryDetailViewModel : ViewModelBase
 
         double value = 0;
         var valueBands = CurrentBands.Where(b => string.IsNullOrEmpty(b.Tolerance)).ToList();
-
+        
         if (valueBands.Count == 1)
         {
             value = valueBands[0].Digit;
@@ -786,23 +808,18 @@ public class GalleryDetailViewModel : ViewModelBase
         else if (valueBands.Count >= 3)
         {
             double baseVal = valueBands[0].Digit * 10 + valueBands[1].Digit;
-            double mult = valueBands[2].Multiplier;
-            value = baseVal * mult;
+            // 3番目のバンド（インデックス2）を乗数として使用
+            var multiplierBand = CurrentBands[2];
+            value = baseVal * multiplierBand.Multiplier;
         }
 
-        string valStr = FormatResistorValue(value);
-        EditInputValue = valStr;
-    }
-
-    private string FormatResistorValue(double val)
-    {
-        // 整数に丸める
-        long intVal = (long)Math.Round(val);
+        // ここでは生の数値を表示したいのか、単位付きか？
+        // 元のコードでは単位付きだったが、スクリーンショットは生数値。
+        // 要望の「切り捨て」を適用して文字列化
         
-        if (intVal >= 1_000_000 && intVal % 1_000_000 == 0) return $"{intVal / 1_000_000}MΩ";
-        if (intVal >= 1_000 && intVal % 1_000 == 0) return $"{intVal / 1_000}kΩ";
-        
-        return $"{intVal}Ω";
+        // ★修正: 計算結果も切り捨てフォーマット
+        double truncated = Math.Floor(value * 100.0) / 100.0;
+        EditInputValue = truncated.ToString("0.##");
     }
 
     private void UpdateNavigationState()
@@ -836,6 +853,7 @@ public class GalleryDetailViewModel : ViewModelBase
         }
     }
     
+    // ★ロジックを元の(a.txt)の状態に戻す
     private void LoadDetections()
     {
         DetectionItems.Clear();
@@ -879,7 +897,6 @@ public class GalleryDetailViewModel : ViewModelBase
 
                     Point2f[] pts = rotatedRect.Points();
                     Point2f tl = new Point2f(), tr = new Point2f(), br = new Point2f(), bl = new Point2f();
-
                     float min_s = float.MaxValue;
                     float max_s = float.MinValue;
                     float min_diff = float.MaxValue;
@@ -899,7 +916,6 @@ public class GalleryDetailViewModel : ViewModelBase
                     float widthA = (float)Math.Sqrt(Math.Pow(br.X - bl.X, 2) + Math.Pow(br.Y - bl.Y, 2));
                     float widthB = (float)Math.Sqrt(Math.Pow(tr.X - tl.X, 2) + Math.Pow(tr.Y - tl.Y, 2));
                     int maxWidth = (int)Math.Max(widthA, widthB);
-
                     float heightA = (float)Math.Sqrt(Math.Pow(tr.X - br.X, 2) + Math.Pow(tr.Y - br.Y, 2));
                     float heightB = (float)Math.Sqrt(Math.Pow(tl.X - bl.X, 2) + Math.Pow(tl.Y - bl.Y, 2));
                     int maxHeight = (int)Math.Max(heightA, heightB);
