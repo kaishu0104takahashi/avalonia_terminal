@@ -277,128 +277,80 @@
                         </Grid>
 
                         <Grid IsVisible="{Binding IsShowKeypad}" Background="#CC000000">
-                            <Grid ColumnDefinitions="Auto, 30, Auto" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                
-                                <Border Grid.Column="0" Background="White" CornerRadius="16" Padding="15" Width="380">
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                        <StackPanel Spacing="8">
-                                            <TextBlock Text="カラーコード早見表" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                                            
-                                            <Grid ColumnDefinitions="60, 40, *" Margin="0,0,0,5">
-                                                <TextBlock Grid.Column="0" Text="色" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="値" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                                <TextBlock Grid.Column="2" Text="乗数 (接頭辞)" FontWeight="Bold" HorizontalAlignment="Left" Margin="10,0,0,0"/>
-                                            </Grid>
-
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Black" Height="35" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"/>
-                                                <TextBlock Grid.Column="1" Text="0" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x1" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="#A52A2A" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="1" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x10" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Red" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="2" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x100" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Orange" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="3" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x1 k (キロ)" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#E65100" FontWeight="Bold"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Yellow" Height="35" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"/>
-                                                <TextBlock Grid.Column="1" Text="4" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x10 k" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#E65100" FontWeight="Bold"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Green" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="5" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x100 k" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#E65100" FontWeight="Bold"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Blue" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="6" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x1 M (メガ)" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#007ACC" FontWeight="Bold"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Purple" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="7" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x10 M" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#007ACC" FontWeight="Bold"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Gray" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="8" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="White" Height="35" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"/>
-                                                <TextBlock Grid.Column="1" Text="9" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Grid>
-                                            
-                                            <Separator Background="#DDD" Height="2" Margin="0,5"/>
-                                            
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Gold" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="-" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x0.1 / ±5%" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Grid>
-                                            <Grid ColumnDefinitions="60, 40, *">
-                                                <Border Grid.Column="0" Background="Silver" Height="35" CornerRadius="4"/>
-                                                <TextBlock Grid.Column="1" Text="-" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                                <TextBlock Grid.Column="2" Text="x0.01 / ±10%" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Grid>
-                                        </StackPanel>
-                                    </ScrollViewer>
-                                </Border>
-
-                                <Border Grid.Column="2" Background="White" Width="550" Height="850" CornerRadius="16" Padding="30">
-                                    <Grid RowDefinitions="Auto, Auto, *, Auto">
-                                        <TextBlock Grid.Row="0" Text="数値を入力 (Ω)" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                            <Border Background="White" Width="1050" Height="780" CornerRadius="16" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+                                <Grid RowDefinitions="Auto, *">
+                                    
+                                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
+                                        <TextBlock Grid.Column="0" Text="抵抗値修正" FontSize="32" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                        <Button Grid.Column="1" Command="{Binding KeypadCancelCommand}" Background="Transparent" Padding="15">
+                                            <TextBlock Text="✕" FontSize="36" Foreground="#999" FontWeight="Bold"/>
+                                        </Button>
+                                    </Grid>
+                                    
+                                    <Grid Grid.Row="1" ColumnDefinitions="450, *">
                                         
-                                        <Border Grid.Row="1" Width="480" Height="280" Margin="0,0,0,20" BorderBrush="#DDD" BorderThickness="1" Background="Black" CornerRadius="4" ClipToBounds="True">
-                                            <Image Source="{Binding EditTargetImage}" Stretch="Uniform"/>
-                                        </Border>
-
-                                        <Grid Grid.Row="2" RowDefinitions="Auto, *">
-                                            <Border Grid.Row="0" BorderBrush="#CCC" BorderThickness="1" CornerRadius="5" Margin="0,0,0,20" Padding="10" Height="70">
-                                                <TextBlock Text="{Binding EditInputValue}" FontSize="40" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        <Grid Grid.Column="0" RowDefinitions="Auto, *">
+                                            <Border Grid.Row="0" Width="420" Height="280" Background="Black" CornerRadius="8" ClipToBounds="True" BorderBrush="#DDD" BorderThickness="1" HorizontalAlignment="Left">
+                                                <Image Source="{Binding EditTargetImage}" Stretch="Uniform"/>
                                             </Border>
                                             
-                                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" RowDefinitions="*,*,*,*">
-                                                <Button Grid.Row="0" Grid.Column="0" Content="7" Command="{Binding KeypadAppendCommand}" CommandParameter="7" Classes="Key"/>
-                                                <Button Grid.Row="0" Grid.Column="1" Content="8" Command="{Binding KeypadAppendCommand}" CommandParameter="8" Classes="Key"/>
-                                                <Button Grid.Row="0" Grid.Column="2" Content="9" Command="{Binding KeypadAppendCommand}" CommandParameter="9" Classes="Key"/>
-                                                <Button Grid.Row="0" Grid.Column="3" Content="k" Command="{Binding KeypadAppendCommand}" CommandParameter="k" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
+                                            <StackPanel Grid.Row="1" Margin="0,20,0,0" Spacing="20">
+                                                <StackPanel>
+                                                    <TextBlock Text="選択したカラー:" FontSize="20" Foreground="#666" Margin="0,0,0,10"/>
+                                                    <ItemsControl ItemsSource="{Binding CurrentBands}">
+                                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Width="60" Height="60" CornerRadius="30" Background="{Binding ColorCode}" BorderBrush="#999" BorderThickness="1"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
                                                 
-                                                <Button Grid.Row="1" Grid.Column="0" Content="4" Command="{Binding KeypadAppendCommand}" CommandParameter="4" Classes="Key"/>
-                                                <Button Grid.Row="1" Grid.Column="1" Content="5" Command="{Binding KeypadAppendCommand}" CommandParameter="5" Classes="Key"/>
-                                                <Button Grid.Row="1" Grid.Column="2" Content="6" Command="{Binding KeypadAppendCommand}" CommandParameter="6" Classes="Key"/>
-                                                <Button Grid.Row="1" Grid.Column="3" Content="M" Command="{Binding KeypadAppendCommand}" CommandParameter="M" Classes="Key" Background="#E3F2FD" Foreground="#007ACC"/>
-                                                
-                                                <Button Grid.Row="2" Grid.Column="0" Content="1" Command="{Binding KeypadAppendCommand}" CommandParameter="1" Classes="Key"/>
-                                                <Button Grid.Row="2" Grid.Column="1" Content="2" Command="{Binding KeypadAppendCommand}" CommandParameter="2" Classes="Key"/>
-                                                <Button Grid.Row="2" Grid.Column="2" Content="3" Command="{Binding KeypadAppendCommand}" CommandParameter="3" Classes="Key"/>
-                                                <Button Grid.Row="2" Grid.Column="3" Content="." Command="{Binding KeypadAppendCommand}" CommandParameter="." Classes="Key"/>
-                                                
-                                                <Button Grid.Row="3" Grid.Column="0" Content="0" Command="{Binding KeypadAppendCommand}" CommandParameter="0" Classes="Key"/>
-                                                <Button Grid.Row="3" Grid.Column="1" Content="BS" Command="{Binding KeypadBackspaceCommand}" Classes="Key" Background="#FFDDDD" FontSize="20"/>
-                                                <Button Grid.Row="3" Grid.Column="2" Content="AC" Command="{Binding KeypadClearCommand}" Classes="Key" Background="#FFCCCC" FontSize="20"/>
+                                                <Border Background="#F0F0F0" Padding="20" CornerRadius="10">
+                                                    <StackPanel>
+                                                        <TextBlock Text="計算結果:" FontSize="18" Foreground="#666"/>
+                                                        <TextBlock Text="{Binding EditInputValue}" FontSize="64" FontWeight="Bold" Foreground="#007ACC" HorizontalAlignment="Right"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Grid Grid.Column="1" RowDefinitions="*, Auto" Margin="20,0,0,0">
+                                            <ScrollViewer Grid.Row="0">
+                                                <ItemsControl ItemsSource="{Binding ColorButtons}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel Orientation="Horizontal"/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Command="{Binding #MainRoot.DataContext.DetailViewModel.AddColorCommand}" CommandParameter="{Binding}"
+                                                                    Margin="6" Background="White" BorderBrush="#DDD" BorderThickness="2" CornerRadius="8" Padding="0"
+                                                                    Width="170" Height="90">
+                                                                <Grid ColumnDefinitions="40, *">
+                                                                    <Border Grid.Column="0" Background="{Binding ColorCode}" CornerRadius="6,0,0,6"/>
+                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
+                                                                        <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="Bold" Foreground="#333"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+
+                                            <Grid Grid.Row="1" ColumnDefinitions="*, *, *" Margin="0,20,0,0">
+                                                <Button Grid.Column="0" Content="1つ消す" Command="{Binding BackspaceColorCommand}" Background="#FFA726" Foreground="White" FontSize="22" FontWeight="Bold" Height="80" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+                                                <Button Grid.Column="1" Content="クリア" Command="{Binding ClearColorsCommand}" Background="#D32F2F" Foreground="White" FontSize="22" FontWeight="Bold" Height="80" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
+                                                <Button Grid.Column="2" Content="決定" Command="{Binding KeypadEnterCommand}" Background="#007ACC" Foreground="White" FontSize="22" FontWeight="Bold" Height="80" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="10"/>
                                             </Grid>
                                         </Grid>
 
-                                        <Grid Grid.Row="3" ColumnDefinitions="Auto, 30, Auto" HorizontalAlignment="Center" Margin="0,30,0,0">
-                                            <Button Grid.Column="0" Content="決定" Command="{Binding KeypadEnterCommand}" Background="#007ACC" Foreground="White" Width="180" Height="70" FontSize="28" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
-                                            <Button Grid.Column="2" Content="キャンセル" Command="{Binding KeypadCancelCommand}" Background="#AAAAAA" Foreground="Black" Width="180" Height="70" FontSize="28" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" CornerRadius="8"/>
-                                        </Grid>
                                     </Grid>
-                                </Border>
-                            </Grid>
+                                </Grid>
+                            </Border>
                         </Grid>
                     </Grid>
                 </DataTemplate>
@@ -443,39 +395,39 @@
                              <Button Classes="Key" Content="BS" Command="{Binding KeyboardBackspaceCommand}" Width="100" Background="#FFDDDD" Margin="15,4,0,4"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Q}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Q"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=W}" Command="{Binding KeyboardAppendCommand}" CommandParameter="W"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=E}" Command="{Binding KeyboardAppendCommand}" CommandParameter="E"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=R}" Command="{Binding KeyboardAppendCommand}" CommandParameter="R"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=T}" Command="{Binding KeyboardAppendCommand}" CommandParameter="T"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Y}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Y"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=U}" Command="{Binding KeyboardAppendCommand}" CommandParameter="U"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=I}" Command="{Binding KeyboardAppendCommand}" CommandParameter="I"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=O}" Command="{Binding KeyboardAppendCommand}" CommandParameter="O"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=P}" Command="{Binding KeyboardAppendCommand}" CommandParameter="P"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Q}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Q"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=W}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="W"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=E}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="E"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=R}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="R"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=T}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="T"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Y}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Y"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=U}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="U"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=I}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="I"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=O}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="O"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=P}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="P"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=A}" Command="{Binding KeyboardAppendCommand}" CommandParameter="A"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=S}" Command="{Binding KeyboardAppendCommand}" CommandParameter="S"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=D}" Command="{Binding KeyboardAppendCommand}" CommandParameter="D"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=F}" Command="{Binding KeyboardAppendCommand}" CommandParameter="F"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=G}" Command="{Binding KeyboardAppendCommand}" CommandParameter="G"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=H}" Command="{Binding KeyboardAppendCommand}" CommandParameter="H"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=J}" Command="{Binding KeyboardAppendCommand}" CommandParameter="J"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=K}" Command="{Binding KeyboardAppendCommand}" CommandParameter="K"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=L}" Command="{Binding KeyboardAppendCommand}" CommandParameter="L"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=A}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="A"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=S}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="S"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=D}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="D"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=F}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="F"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=G}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="G"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=H}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="H"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=J}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="J"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=K}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="K"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=L}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="L"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button Classes="Key" Content="{Binding CapsButtonText}" Command="{Binding ToggleCaseCommand}" Background="{Binding CapsButtonColor}" Foreground="White" Width="100"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Z}" Command="{Binding KeyboardAppendCommand}" CommandParameter="Z"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=X}" Command="{Binding KeyboardAppendCommand}" CommandParameter="X"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=C}" Command="{Binding KeyboardAppendCommand}" CommandParameter="C"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=V}" Command="{Binding KeyboardAppendCommand}" CommandParameter="V"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=B}" Command="{Binding KeyboardAppendCommand}" CommandParameter="B"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=N}" Command="{Binding KeyboardAppendCommand}" CommandParameter="N"/>
-                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=M}" Command="{Binding KeyboardAppendCommand}" CommandParameter="M"/>
-                            <Button Classes="Key" Content="_" Command="{Binding KeyboardAppendCommand}" CommandParameter="_"/>
-                            <Button Classes="Key" Content="-" Command="{Binding KeyboardAppendCommand}" CommandParameter="-"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=Z}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="Z"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=X}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="X"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=C}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="C"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=V}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="V"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=B}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="B"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=N}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="N"/>
+                            <Button Classes="Key" Content="{Binding IsUpperCase, Converter={StaticResource CaseConverter}, ConverterParameter=M}" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="M"/>
+                            <Button Classes="Key" Content="_" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="_"/>
+                            <Button Classes="Key" Content="-" Command="{Binding SearchKeyboardAppendCommand}" CommandParameter="-"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -487,4 +439,5 @@
             </Border>
         </Grid>
     </Grid>
+    <UserControl.Name>MainRoot</UserControl.Name>
 </UserControl>

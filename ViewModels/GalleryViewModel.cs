@@ -16,6 +16,17 @@ using OpenCvSharp;
 
 namespace avalonia_terminal.ViewModels;
 
+// カラーコード定義
+public class ResistorColor
+{
+    public string Name { get; set; } = "";
+    public string ColorCode { get; set; } = ""; 
+    public string TextColor { get; set; } = "White";
+    public int Digit { get; set; }      
+    public double Multiplier { get; set; } 
+    public string Tolerance { get; set; } = ""; 
+}
+
 public enum GalleryViewMode {
     List,
     Detail
@@ -580,7 +591,6 @@ public class GalleryDetailViewModel : ViewModelBase
         ? date.ToString("yyyy年MM月dd日 HH時mm分ss秒") : Record.Date;
     public string BoardInfo => "基板情報: 取得中";
     
-    // --- 修正機能プロパティ ---
     private bool _isCorrectionMode = false;
     public bool IsCorrectionMode
     {
@@ -609,13 +619,30 @@ public class GalleryDetailViewModel : ViewModelBase
         set { _editInputValue = value; RaisePropertyChanged(); }
     }
 
-    // 【追加】修正対象の抵抗画像
     private Bitmap? _editTargetImage;
     public Bitmap? EditTargetImage
     {
         get => _editTargetImage;
         set { _editTargetImage = value; RaisePropertyChanged(); }
     }
+
+    public List<ResistorColor> ColorButtons { get; } = new List<ResistorColor>
+    {
+        new ResistorColor { Name="黒", ColorCode="Black", TextColor="White", Digit=0, Multiplier=1 },
+        new ResistorColor { Name="茶", ColorCode="#A52A2A", TextColor="White", Digit=1, Multiplier=10 },
+        new ResistorColor { Name="赤", ColorCode="Red", TextColor="White", Digit=2, Multiplier=100 },
+        new ResistorColor { Name="橙", ColorCode="Orange", TextColor="Black", Digit=3, Multiplier=1000 },
+        new ResistorColor { Name="黄", ColorCode="Yellow", TextColor="Black", Digit=4, Multiplier=10000 },
+        new ResistorColor { Name="緑", ColorCode="Green", TextColor="White", Digit=5, Multiplier=100000 },
+        new ResistorColor { Name="青", ColorCode="Blue", TextColor="White", Digit=6, Multiplier=1000000 },
+        new ResistorColor { Name="紫", ColorCode="Purple", TextColor="White", Digit=7, Multiplier=10000000 },
+        new ResistorColor { Name="灰", ColorCode="Gray", TextColor="Black", Digit=8, Multiplier=0 },
+        new ResistorColor { Name="白", ColorCode="White", TextColor="Black", Digit=9, Multiplier=0 },
+        new ResistorColor { Name="金", ColorCode="Gold", TextColor="Black", Multiplier=0.1, Tolerance="±5%" },
+        new ResistorColor { Name="銀", ColorCode="Silver", TextColor="Black", Multiplier=0.01, Tolerance="±10%" }
+    };
+
+    public ObservableCollection<ResistorColor> CurrentBands { get; } = new();
 
     private GalleryDetectionItem? _selectedEditItem;
 
@@ -624,11 +651,11 @@ public class GalleryDetailViewModel : ViewModelBase
     public ICommand MovePreviousCommand { get; }
     public ICommand ToggleCorrectionCommand { get; }
     public ICommand ItemEditCommand { get; }
-    public ICommand KeypadAppendCommand { get; }
-    public ICommand KeypadBackspaceCommand { get; }
-    public ICommand KeypadClearCommand { get; }
     public ICommand KeypadEnterCommand { get; }
     public ICommand KeypadCancelCommand { get; }
+    public ICommand AddColorCommand { get; }
+    public ICommand ClearColorsCommand { get; }
+    public ICommand BackspaceColorCommand { get; }
 
     public GalleryDetailViewModel(InspectionRecord record, GalleryViewModel parent, bool startFromEnd)
     {
@@ -637,20 +664,41 @@ public class GalleryDetailViewModel : ViewModelBase
         CloseDetailCommand = parent.BackToListCommand;
         
         ToggleCorrectionCommand = new RelayCommand(() => IsCorrectionMode = !IsCorrectionMode);
+        
         ItemEditCommand = new RelayCommand<GalleryDetectionItem>(item => 
         {
             if (!IsCorrectionMode || item == null) return;
             _selectedEditItem = item;
-            EditTargetImage = item.CroppedImage; // 画像をセット
+            EditTargetImage = item.CroppedImage;
             EditInputValue = item.RawValue;
+            CurrentBands.Clear(); 
             IsShowKeypad = true;
         });
-        KeypadAppendCommand = new LocalRelayCommand<string>(key => EditInputValue += key);
-        KeypadBackspaceCommand = new RelayCommand(() => 
+
+        AddColorCommand = new RelayCommand<ResistorColor>(color => 
         {
-            if (EditInputValue.Length > 0) EditInputValue = EditInputValue.Substring(0, EditInputValue.Length - 1);
+            if (color == null) return;
+            if (CurrentBands.Count >= 5) return; 
+
+            CurrentBands.Add(color);
+            CalculateValueFromBands();
         });
-        KeypadClearCommand = new RelayCommand(() => EditInputValue = "");
+
+        ClearColorsCommand = new RelayCommand(() => 
+        {
+            CurrentBands.Clear();
+            EditInputValue = "";
+        });
+
+        BackspaceColorCommand = new RelayCommand(() => 
+        {
+            if (CurrentBands.Count > 0)
+            {
+                CurrentBands.RemoveAt(CurrentBands.Count - 1);
+                CalculateValueFromBands();
+            }
+        });
+
         KeypadCancelCommand = new RelayCommand(() => IsShowKeypad = false);
         KeypadEnterCommand = new RelayCommand(SaveCorrection);
 
@@ -714,6 +762,47 @@ public class GalleryDetailViewModel : ViewModelBase
                 _parentVM.GoToPreviousRecord(Record);
             }
         });
+    }
+
+    private void CalculateValueFromBands()
+    {
+        if (CurrentBands.Count == 0)
+        {
+            EditInputValue = "";
+            return;
+        }
+
+        double value = 0;
+        var valueBands = CurrentBands.Where(b => string.IsNullOrEmpty(b.Tolerance)).ToList();
+
+        if (valueBands.Count == 1)
+        {
+            value = valueBands[0].Digit;
+        }
+        else if (valueBands.Count == 2)
+        {
+            value = valueBands[0].Digit * 10 + valueBands[1].Digit;
+        }
+        else if (valueBands.Count >= 3)
+        {
+            double baseVal = valueBands[0].Digit * 10 + valueBands[1].Digit;
+            double mult = valueBands[2].Multiplier;
+            value = baseVal * mult;
+        }
+
+        string valStr = FormatResistorValue(value);
+        EditInputValue = valStr;
+    }
+
+    private string FormatResistorValue(double val)
+    {
+        // 整数に丸める
+        long intVal = (long)Math.Round(val);
+        
+        if (intVal >= 1_000_000 && intVal % 1_000_000 == 0) return $"{intVal / 1_000_000}MΩ";
+        if (intVal >= 1_000 && intVal % 1_000 == 0) return $"{intVal / 1_000}kΩ";
+        
+        return $"{intVal}Ω";
     }
 
     private void UpdateNavigationState()
