@@ -9,7 +9,7 @@ using System.Buffers.Binary;
 
 namespace avalonia_terminal.Services;
 
-public class TcpJsonClient
+public class TcpJsonServer
 {
     private TcpListener? _listener;
     private TcpClient? _currentClient;
@@ -18,11 +18,10 @@ public class TcpJsonClient
 
     public event Action<string>? OnJsonReceived;
     public event Action<string>? OnStatusChanged;
-
-    // ★追加: 接続状態を確認するプロパティ
+    
     public bool IsConnected => _currentClient != null && _currentClient.Connected;
 
-    public TcpJsonClient(int port)
+    public TcpJsonServer(int port)
     {
         _port = port;
     }
@@ -45,7 +44,6 @@ public class TcpJsonClient
     public async Task SendJsonAsync(object data)
     {
         if (_currentClient == null || !_currentClient.Connected) return;
-
         try
         {
             string jsonString = JsonSerializer.Serialize(data);
@@ -91,11 +89,10 @@ public class TcpJsonClient
                         // 1. ヘッダー受信 (4byte)
                         byte[] headerBuffer = new byte[4];
                         int bytesRead = await ReadExactAsync(stream, headerBuffer, 4);
-                        if (bytesRead == 0) break; // 切断
+                        if (bytesRead == 0) break; 
 
                         // Big Endianとしてサイズを解釈
                         int bodyLength = BinaryPrimitives.ReadInt32BigEndian(headerBuffer);
-                        
                         if (bodyLength <= 0) continue;
                         if (bodyLength > 10 * 1024 * 1024) throw new Exception("Data too large");
 

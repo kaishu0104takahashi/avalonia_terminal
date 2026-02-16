@@ -21,16 +21,13 @@ public class MainViewModel : ViewModelBase
         get => _currentViewModel;
         set 
         { 
-            _currentViewModel = value; 
+            _currentViewModel = value;
             RaisePropertyChanged();
-            // ★追加: 画面が変わるたびにホーム画面かどうか判定して通知
             RaisePropertyChanged(nameof(IsHomeView));
         }
     }
 
-    // ★追加: 現在のViewModelがHomeViewModelならTrue
     public bool IsHomeView => CurrentViewModel is HomeViewModel;
-
     private bool _isFullScreen = true;
     public bool IsFullScreen
     {
@@ -39,7 +36,9 @@ public class MainViewModel : ViewModelBase
     }
 
     private readonly UdpVideoReceiver _videoReceiver;
-    public TcpJsonClient TcpServer { get; }
+    
+    // Serverに変更済み
+    public TcpJsonServer TcpServer { get; }
 
     public bool IsConnected => TcpServer.IsConnected;
 
@@ -48,6 +47,22 @@ public class MainViewModel : ViewModelBase
     {
         get => _cameraImage;
         set { _cameraImage = value; RaisePropertyChanged(); }
+    }
+
+    // 画像のフレームID (今回は更新しない)
+    private uint _currentImageFrameId;
+    public uint CurrentImageFrameId
+    {
+        get => _currentImageFrameId;
+        set { _currentImageFrameId = value; RaisePropertyChanged(); }
+    }
+
+    // JSONのフレームID
+    private int _latestJsonFrameId;
+    public int LatestJsonFrameId
+    {
+        get => _latestJsonFrameId;
+        set { _latestJsonFrameId = value; RaisePropertyChanged(); }
     }
 
     private bool _isCameraPaused = false;
@@ -78,12 +93,22 @@ public class MainViewModel : ViewModelBase
     public MainViewModel()
     {
         ToggleFullScreenCommand = new RelayCommand(() => IsFullScreen = !IsFullScreen);
-
         _videoReceiver = new UdpVideoReceiver(50000);
-        _videoReceiver.OnFrameReceived += (bmp) => Dispatcher.UIThread.Post(() => CameraImage = bmp);
+        
+        // ★修正: 引数を (bmp) のみに戻しました
+        _videoReceiver.OnFrameReceived += (bmp) => 
+        {
+            Dispatcher.UIThread.Post(() => 
+            {
+                CameraImage = bmp;
+                // CurrentImageFrameId = id; // UdpVideoReceiver側が対応していないため削除
+            });
+        };
         _videoReceiver.Start();
 
-        TcpServer = new TcpJsonClient(55555);
+        // Serverとして初期化
+        TcpServer = new TcpJsonServer(55555);
+        
         TcpServer.OnJsonReceived += (json) => 
         {
             try { File.AppendAllText("/home/shikoku-pc/json_log.txt", $"[{DateTime.Now:HH:mm:ss}] {json}\n"); } catch { }
@@ -93,12 +118,12 @@ public class MainViewModel : ViewModelBase
                 if (json.Contains("\"type\": \"data\"") || json.Contains("\"type\":\"data\""))
                 {
                     var response = JsonSerializer.Deserialize<type_data_json>(json, _jsonOptions);
-                    
                     if (response != null)
                     {
                         LatestDetections = response.detections ?? new List<detection_data>();
+                        LatestJsonFrameId = response.frame_id;
                         LastDataReceivedTime = DateTime.Now;
-                        Console.WriteLine($"[JSON] Updated: {LatestDetections.Count} items at {LastDataReceivedTime:HH:mm:ss.fff}");
+                        Console.WriteLine($"[JSON] Updated: ID={response.frame_id}, Count={LatestDetections.Count}");
                     }
                 }
             }
@@ -114,7 +139,6 @@ public class MainViewModel : ViewModelBase
     }
 
     public void Navigate(ViewModelBase viewModel) => CurrentViewModel = viewModel;
-
     public void ShutdownApplication()
     {
         _videoReceiver.Stop();
