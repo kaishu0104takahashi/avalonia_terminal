@@ -126,25 +126,32 @@ namespace avalonia_terminal.ViewModels
             Console.WriteLine("Sent YUV422 command. Waiting for data...");
             ResultText = "データ受信待機中...";
 
-            // 古いデータを流すための待機
-            await Task.Delay(2000);
+            // ★修正: 2秒間の待機を「キャンセル可能な待機」に変更
+            // これにより、待機中でもボタンを押せば即座に中止できる
+            for (int k = 0; k < 20; k++)
+            {
+                if (_isCancelled) 
+                {
+                    CancelProcess(); // awaitしない (即座に戻るため)
+                    return;
+                }
+                await Task.Delay(100);
+            }
 
             var validStartTime = DateTime.Now;
             bool received = false;
             
-            // キャンセルされるまで待つ
+            // データ同期待ちループ
             while (!_isCancelled)
             {
                 var lastRecv = _mainViewModel.LastDataReceivedTime;
 
-                // まだ新しいデータが来ていないなら待つ
                 if (lastRecv <= validStartTime)
                 {
                     await Task.Delay(100);
                     continue;
                 }
 
-                // データが空でなければ採用
                 if (_mainViewModel.LatestDetections.Count >= 0)
                 {
                     received = true;
@@ -154,13 +161,13 @@ namespace avalonia_terminal.ViewModels
                 await Task.Delay(100);
             }
 
-            if (!received)
+            if (!received || _isCancelled)
             {
-                await CancelProcess();
+                CancelProcess();
                 return;
             }
 
-            // 画像確定待ち
+            // 画像確定
             await Task.Delay(200);
 
             if (_mainViewModel.CameraImage != null)
@@ -186,16 +193,32 @@ namespace avalonia_terminal.ViewModels
             }
         }
 
-        private async Task CancelProcess()
+        // ★修正: async void でなく async voidに近い形だが、Taskとして管理し、呼び出し元ではawaitしない
+        private void CancelProcess()
         {
             Console.WriteLine("Measurement Cancelled.");
             ResultText = "中断";
+            
+            // ★重要: UIを即座に操作可能にする
             IsMeasuring = false;
-            await _mainViewModel.TcpServer.SendJsonAsync(new 
-            { 
-                type = "cmd", 
-                command = "change_format", 
-                args = new { format = "MJPEG" } 
+            
+            // ★重要: 通信コマンドは別スレッドで投げっぱなしにする (待たない)
+            // これにより、通信タイムアウトでUIが固まるのを防ぐ
+            Task.Run(async () => 
+            {
+                try
+                {
+                    await _mainViewModel.TcpServer.SendJsonAsync(new 
+                    { 
+                        type = "cmd", 
+                        command = "change_format", 
+                        args = new { format = "MJPEG" } 
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Cancel Command Error: {ex.Message}");
+                }
             });
         }
 
@@ -214,7 +237,6 @@ namespace avalonia_terminal.ViewModels
                     using var src = Cv2.ImRead(tempPath);
                     if (src.Empty()) return;
                     
-                    // ★追加: 画像サイズ取得
                     float imgW = src.Width;
                     float imgH = src.Height;
 
@@ -225,7 +247,6 @@ namespace avalonia_terminal.ViewModels
 
                     foreach (var det in detections)
                     {
-                        // ★修正: 個別のtry-catchで囲む (1つ失敗しても他は続行する)
                         try 
                         {
                             if (det.yolo_obb == null) continue;
@@ -233,7 +254,6 @@ namespace avalonia_terminal.ViewModels
                             
                             float angleDeg = obb.rotation_rad * (180f / (float)Math.PI);
                             
-                            // ★修正: 座標が画像範囲外にならないように補正 (Clamp)
                             float cx = Math.Clamp(obb.center_x, 0, imgW);
                             float cy = Math.Clamp(obb.center_y, 0, imgH);
                             float w = Math.Min(obb.width, imgW);
@@ -291,12 +311,10 @@ namespace avalonia_terminal.ViewModels
                         }
                         catch (Exception innerEx)
                         {
-                            // 個別のエラーはログに出すが、ループは止めない
                             Console.WriteLine($"Item Error: {innerEx.Message}");
                         }
                     }
 
-                    // UI更新 (成功した分だけ表示)
                     Dispatcher.UIThread.Post(() =>
                     {
                         foreach (var item in newItems) DetectionItems.Add(item);

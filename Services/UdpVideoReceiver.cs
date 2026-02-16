@@ -8,16 +8,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using OpenCvSharp;
+using System.Runtime.InteropServices;
 
 namespace avalonia_terminal.Services;
 
 static class Constants
 {
-    // 再構築用バッファサイズ (4MB)
-    public const int ALLOC_BYTE_SIZE = 4 * 1024 * 1024;
-    // ソケットの受信バッファサイズ (8MB - カーネルレベルでのドロップを防ぐため大きく取る)
+    public const int ALLOC_BYTE_SIZE = 8 * 1024 * 1024;
     public const int KERNEL_S_UDP_BUFFER_SIZE = 8 * 1024 * 1024;
-    // ヘッダーサイズ (Identifier:4 + Index:2 + Total:2 + Size:2 + W:2 + H:2 + C:1)
     public const int HEADER_SIZE = 15;
 }
 
@@ -26,15 +25,17 @@ public class UdpVideoReceiver
     private Socket? _socket;
     private bool _is_running;
     private readonly int _port;
-    // 分割されたパケットを結合するためのバッファ
     private readonly byte[] _reassembly_buffer = new byte[Constants.ALLOC_BYTE_SIZE];
-    // 現在のフレームの受信済みデータ長
     private int _current_payload_length = 0;
-    // レンダリング中フラグ (Interlockedで使用)
-    private int _is_rendering = 0;
     
-    // 画像を受信したときにViewModelへ通知するアクション
-    public Action<Bitmap?>? OnFrameReceived;
+    // 排他制御用フラグ (0:空き, 1:処理中)
+    private int _is_processing = 0;
+    
+    private uint _current_frame_id = 0;
+    private int _current_width = 0;
+    private int _current_height = 0;
+
+    public Action<Avalonia.Media.Imaging.Bitmap?>? OnFrameReceived;
     public bool IsPaused { get; set; } = false;
 
     public UdpVideoReceiver(int port)
@@ -44,10 +45,7 @@ public class UdpVideoReceiver
 
     public void Start()
     {
-        if (_is_running)
-        {
-            return;
-        }
+        if (_is_running) return;
         _is_running = true;
         Task.Run(Receiver_loop);
     }
@@ -58,79 +56,73 @@ public class UdpVideoReceiver
         _socket.Bind(new IPEndPoint(IPAddress.Any, _port));
         _socket.ReceiveBufferSize = Constants.KERNEL_S_UDP_BUFFER_SIZE;
         
-        byte[] receive_buffer = ArrayPool<byte>.Shared.Rent(4096);
+        byte[] receive_buffer = ArrayPool<byte>.Shared.Rent(65536);
+        
         try
         {
             EndPoint remote_endpoint = new IPEndPoint(IPAddress.Any, 0);
+            
             while (_is_running)
             {
-                // 非同期でデータ受信
                 var result = await _socket.ReceiveFromAsync(new Memory<byte>(receive_buffer), SocketFlags.None, remote_endpoint);
+                
                 if (IsPaused) continue;
 
                 int bytes_read = result.ReceivedBytes;
+                if (bytes_read < Constants.HEADER_SIZE) continue;
 
-                // ヘッダーサイズ未満のデータは無視
-                if (bytes_read < Constants.HEADER_SIZE)
-                {
-                    continue;
-                }
-
-                // ヘッダーの解析 (Big Endianに変更)
                 ReadOnlySpan<byte> packet_span = receive_buffer.AsSpan(0, bytes_read);
-                // Offset 4: packet_index (uint16)
+
+                uint identifier = BinaryPrimitives.ReadUInt32BigEndian(packet_span.Slice(0));
                 ushort packet_index = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(4));
-                // Offset 6: total_packet (uint16)
                 ushort total_packet = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(6));
-                // Offset 8: data_size (uint16)
                 ushort data_size = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(8));
+                
+                ushort width = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(10));
+                ushort height = BinaryPrimitives.ReadUInt16BigEndian(packet_span.Slice(12));
 
-                // データ整合性チェック: 受信サイズがヘッダー+データサイズ以上あるか
-                if (bytes_read < Constants.HEADER_SIZE + data_size)
-                {
-                    continue;
-                }
+                if (bytes_read < Constants.HEADER_SIZE + data_size) continue;
 
-                // フレームの最初のパケットならバッファをリセット
                 if (packet_index == 0)
                 {
+                    _current_frame_id = identifier;
                     _current_payload_length = 0;
+                    _current_width = width;
+                    _current_height = height;
+                }
+                else if (identifier != _current_frame_id)
+                {
+                    continue;
                 }
 
-                // バッファオーバーフロー対策
                 if (_current_payload_length + data_size > _reassembly_buffer.Length)
                 {
                     _current_payload_length = 0;
-                    // 破損フレームとして破棄
                     continue;
                 }
 
-                // ペイロード部分(ヘッダー以降)を結合バッファにコピー
                 packet_span.Slice(Constants.HEADER_SIZE, data_size).CopyTo(_reassembly_buffer.AsSpan(_current_payload_length));
                 _current_payload_length += data_size;
 
-                // 最後のパケットを受信したらフレーム処理を実行
                 if (packet_index == total_packet - 1)
                 {
-                    // レンダリング中でなければ処理を実行
-                    if (Interlocked.CompareExchange(ref _is_rendering, 1, 0) == 0)
+                    // ★重要: ここでフラグを立てて、Bitmap生成が終わったら即座に下ろす
+                    if (Interlocked.CompareExchange(ref _is_processing, 1, 0) == 0)
                     {
                         Process_frame(_current_payload_length);
                     }
-                    
-                    // 次のフレームのためにリセット
                     _current_payload_length = 0;
                 }
             }
         }
         catch (Exception ex)
         {
-             Console.WriteLine($"Socket Error : {ex.Message}");
+             Console.WriteLine($"UDP Loop Error: {ex.Message}");
         }
         finally
         {
             ArrayPool<byte>.Shared.Return(receive_buffer);
-            try { _socket.Close(); } catch {}
+            try { _socket?.Close(); } catch {}
         }
     }
 
@@ -138,22 +130,62 @@ public class UdpVideoReceiver
     {
         try
         {
-            // MemoryStreamを作成し、Bitmapに変換
-            using (var ms = new MemoryStream(_reassembly_buffer, 0, length, writable: false))
+            Avalonia.Media.Imaging.Bitmap? bitmap = null;
+            int w = _current_width;
+            int h = _current_height;
+
+            // 1. MJPEGとして試す
+            try
             {
-                var bitmap = new Bitmap(ms);
-                // UIスレッドでイベント発火
+                using (var ms = new MemoryStream(_reassembly_buffer, 0, length, writable: false))
+                {
+                    bitmap = new Avalonia.Media.Imaging.Bitmap(ms);
+                }
+            }
+            catch
+            {
+                // MJPEG失敗 -> YUV422としてOpenCV変換
+                try
+                {
+                    if (w > 0 && h > 0)
+                    {
+                        var handle = GCHandle.Alloc(_reassembly_buffer, GCHandleType.Pinned);
+                        try
+                        {
+                            using var matYuv = Mat.FromPixelData(h, w, MatType.CV_8UC2, handle.AddrOfPinnedObject());
+                            using var matBgr = new Mat();
+                            Cv2.CvtColor(matYuv, matBgr, ColorConversionCodes.YUV2BGR_YUYV);
+                            
+                            using var msOut = matBgr.ToMemoryStream(".png");
+                            msOut.Position = 0;
+                            bitmap = new Avalonia.Media.Imaging.Bitmap(msOut);
+                        }
+                        finally
+                        {
+                            handle.Free();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Image Convert Error: {ex.Message}");
+                }
+            }
+
+            // 画像があればUIへ通知 (ここは非同期)
+            if (bitmap != null)
+            {
                 Dispatcher.UIThread.Post(() =>
                 {
                     OnFrameReceived?.Invoke(bitmap);
-                    Interlocked.Exchange(ref _is_rendering, 0);
                 }, DispatcherPriority.Render);
             }
         }
-        catch
+        finally
         {
-            // エラー時はロックを解除して次へ
-            Interlocked.Exchange(ref _is_rendering, 0);
+            // ★最重要: UIスレッドへの通知完了を待たずに、即座にロックを解除する
+            // これによりUIが固まっても、次の画像受信は止まらなくなる
+            Interlocked.Exchange(ref _is_processing, 0);
         }
     }
 
@@ -165,7 +197,7 @@ public class UdpVideoReceiver
             _socket?.Shutdown(SocketShutdown.Both);
             _socket?.Close();
         }
-        catch { /* 無視 */ }
+        catch { }
         finally
         {
             _socket?.Dispose();
